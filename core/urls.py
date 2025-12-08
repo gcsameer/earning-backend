@@ -1,4 +1,5 @@
 from django.urls import path
+from .views_referrals import ReferralAnalyticsView
 from rest_framework_simplejwt.views import TokenRefreshView
 from .views import (
     CustomTokenObtainPairView,
@@ -23,4 +24,10 @@ urlpatterns = [
     path("wallet/", WalletView.as_view(), name="wallet"),
     path("withdraw/", WithdrawRequestView.as_view(), name="withdraw_request"),
     path("withdraws/", UserWithdrawListView.as_view(), name="withdraw_list"),
+
+
+path("referrals/", ReferralAnalyticsView.as_view()),
+path("daily-bonus/", DailyBonusView.as_view()),
+
+
 ]

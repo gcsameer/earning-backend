@@ -185,3 +185,6 @@ class FraudEvent(models.Model):
 
     def __str__(self):
         return f"{self.user} - {self.event_type} ({self.score})"
+
+
+daily_bonus_claimed = models.DateField(null=True, blank=True)
