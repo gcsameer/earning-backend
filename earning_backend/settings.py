@@ -34,11 +34,13 @@ ALLOWED_HOSTS = os.environ.get("DJANGO_ALLOWED_HOSTS", "*").split(",")
 # e.g. "https://nepearn-frontend.vercel.app"
 CSRF_TRUSTED_ORIGINS = [
     "https://earning-backend-production.up.railway.app",
+    "https://earning-frontend.vercel.app",
     # "https://your-vercel-app-name.vercel.app",  # add when you know it
 ]
 
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:3000",
+    "https://earning-frontend.vercel.app",
     # "https://your-vercel-app-name.vercel.app",  # add when you know it
 ]
 
