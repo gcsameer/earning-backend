@@ -1,6 +1,11 @@
 from rest_framework import serializers
 from django.contrib.auth import get_user_model
-from .models import Task, WalletTransaction, WithdrawRequest
+
+from .models import (
+    Task,
+    WalletTransaction,
+    WithdrawRequest,
+)
 
 User = get_user_model()
 
@@ -37,7 +42,7 @@ class RegisterSerializer(serializers.ModelSerializer):
         user.set_password(password)
 
         # generate ref_code if missing
-        if not user.ref_code:
+        if not getattr(user, "ref_code", None):
             import random
             import string
 
@@ -56,7 +61,7 @@ class RegisterSerializer(serializers.ModelSerializer):
         user.save()
 
         # referral bonuses
-        if user.referred_by:
+        if getattr(user, "referred_by", None):
             referrer_bonus = 50
             user_bonus = 20
 
@@ -125,12 +130,18 @@ class WalletTransactionSerializer(serializers.ModelSerializer):
 class WithdrawRequestSerializer(serializers.ModelSerializer):
     class Meta:
         model = WithdrawRequest
-        fields = (
+        fields = [
             "id",
             "amount_rs",
             "method",
             "account_id",
             "status",
+            "admin_note",
             "created_at",
-        )
-        read_only_fields = ("status", "created_at")
+            "processed_at",
+        ]
+        read_only_fields = ["status", "admin_note", "created_at", "processed_at"]
+
+    def create(self, validated_data):
+        user = self.context["request"].user
+        return WithdrawRequest.objects.create(user=user, **validated_data)

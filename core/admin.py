@@ -1,5 +1,6 @@
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin as DjangoUserAdmin
+
 from .models import (
     User,
     Settings,
@@ -24,6 +25,9 @@ class UserAdmin(DjangoUserAdmin):
                     "device_id",
                     "fraud_score",
                     "coins_balance",
+                    "last_earn_time",
+                    "daily_earn_count",
+                    "last_earn_date",
                 )
             },
         ),
@@ -49,22 +53,25 @@ class TaskAdmin(admin.ModelAdmin):
 class UserTaskAdmin(admin.ModelAdmin):
     list_display = ("user", "task", "status", "started_at", "completed_at")
     list_filter = ("status",)
+    search_fields = ("user__username", "task__title")
 
 
 @admin.register(WalletTransaction)
 class WalletTransactionAdmin(admin.ModelAdmin):
     list_display = ("user", "type", "coins", "amount_rs", "created_at")
     list_filter = ("type",)
+    search_fields = ("user__username",)
 
 
 @admin.register(WithdrawRequest)
 class WithdrawRequestAdmin(admin.ModelAdmin):
-    list_display = ("user", "amount_rs", "method", "status", "created_at")
+    list_display = ("user", "amount_rs", "method", "account_id", "status", "created_at")
     list_filter = ("method", "status")
+    search_fields = ("user__username", "account_id")
 
 
 @admin.register(FraudEvent)
 class FraudEventAdmin(admin.ModelAdmin):
     list_display = ("user", "event_type", "score", "created_at")
     list_filter = ("event_type",)
-
+    search_fields = ("user__username", "reason")
