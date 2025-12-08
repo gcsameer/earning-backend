@@ -35,6 +35,11 @@ DEBUG = os.environ.get("DJANGO_DEBUG", "True") == "True"
 
 ALLOWED_HOSTS = os.environ.get("DJANGO_ALLOWED_HOSTS", "*").split(",")
 
+CSRF_TRUSTED_ORIGINS = [
+    'https://earning-backend-production.up.railway.app',
+]
+
+
 
 
 # Application definition
