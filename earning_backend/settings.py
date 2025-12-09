@@ -32,17 +32,17 @@ ALLOWED_HOSTS = os.environ.get("DJANGO_ALLOWED_HOSTS", "*").split(",")
 
 # CSRF / CORS – add your Vercel URL after you deploy frontend
 # e.g. "https://nepearn-frontend.vercel.app"
-CSRF_TRUSTED_ORIGINS = [
-    "https://earning-backend-production.up.railway.app",
-    "https://earning-frontend.vercel.app",
-    # "https://your-vercel-app-name.vercel.app",  # add when you know it
-]
-
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:3000",
     "https://earning-frontend.vercel.app",
-    # "https://your-vercel-app-name.vercel.app",  # add when you know it
 ]
+
+CSRF_TRUSTED_ORIGINS = [
+    "https://earning-backend-production.up.railway.app",
+    "https://earning-frontend.vercel.app",
+]
+
+CORS_ALLOW_CREDENTIALS = True
 
 # If you later use cookies/session auth from the frontend:
 # CORS_ALLOW_CREDENTIALS = True
