@@ -21,15 +21,17 @@ from .utils import check_task_speed, check_daily_task_limit
 User = get_user_model()
 
 
+# -----------------------------
+#  HELPERS
+# -----------------------------
 def get_client_ip(request):
     x_forwarded_for = request.META.get("HTTP_X_FORWARDED_FOR")
-    if x_forwarded_for:
-        ip = x_forwarded_for.split(",")[0]
-    else:
-        ip = request.META.get("REMOTE_ADDR")
-    return ip
+    return x_forwarded_for.split(",")[0] if x_forwarded_for else request.META.get("REMOTE_ADDR")
 
 
+# -----------------------------
+#  AUTH
+# -----------------------------
 class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
     @classmethod
     def get_token(cls, user):
@@ -57,31 +59,33 @@ class RegisterView(APIView):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
+# -----------------------------
+#  USER PROFILE
+# -----------------------------
 class MeView(APIView):
     def get(self, request):
-        serializer = UserSerializer(request.user)
-        return Response(serializer.data)
+        return Response(UserSerializer(request.user).data)
 
 
+# -----------------------------
+#  TASK SYSTEM
+# -----------------------------
 class TaskListView(APIView):
     def get(self, request):
         tasks = Task.objects.filter(is_active=True)
-        serializer = TaskSerializer(tasks, many=True)
-        return Response(serializer.data)
+        return Response(TaskSerializer(tasks, many=True).data)
 
 
 class TaskStartView(APIView):
     def post(self, request, task_id):
-        # Optional extra guard: daily task limit BEFORE starting a new task
+
+        # DAILY LIMIT CHECK
         check_daily_task_limit(request.user)
 
         try:
             task = Task.objects.get(id=task_id, is_active=True)
         except Task.DoesNotExist:
-            return Response(
-                {"detail": "Task not found"},
-                status=status.HTTP_404_NOT_FOUND,
-            )
+            return Response({"detail": "Task not found"}, status=status.HTTP_404_NOT_FOUND)
 
         ip = get_client_ip(request)
         device_id = request.data.get("device_id")
@@ -94,16 +98,8 @@ class TaskStartView(APIView):
             device_id=device_id,
         )
 
-        # You already have this protection; leaving it here is fine too
-        # (if you prefer only one call, you can remove this line)
-        check_daily_task_limit(request.user)
-
         return Response(
-            {
-                "message": "Task started",
-                "user_task_id": user_task.id,
-                "task": TaskSerializer(task).data,
-            },
+            {"message": "Task started", "user_task_id": user_task.id, "task": TaskSerializer(task).data},
             status=status.HTTP_201_CREATED,
         )
 
@@ -111,44 +107,33 @@ class TaskStartView(APIView):
 class TaskCompleteView(APIView):
     def post(self, request, user_task_id):
         try:
-            user_task = UserTask.objects.get(
-                id=user_task_id,
-                user=request.user,
-                status="pending",
-            )
+            user_task = UserTask.objects.get(id=user_task_id, user=request.user, status="pending")
         except UserTask.DoesNotExist:
-            return Response(
-                {"detail": "User task not found or already completed"},
-                status=status.HTTP_404_NOT_FOUND,
-            )
+            return Response({"detail": "Task not found or already completed"}, status=status.HTTP_404_NOT_FOUND)
 
         user = request.user
 
-        # 🔒 FRAUD / DAILY LIMIT CHECK (uses methods on your User model)
-        # If you added can_earn_now(max_per_day=...) on User
-        if hasattr(user, "can_earn_now") and not user.can_earn_now(max_per_day=100):
-            raise PermissionDenied(
-                "Daily earning limit reached. Try again tomorrow."
-            )
+        # DAILY EARNING LIMIT
+        if not user.can_earn_now(max_per_day=100):
+            raise PermissionDenied("Daily earning limit reached. Try again tomorrow.")
 
+        # MARK COMPLETED
         user_task.status = "completed"
         user_task.completed_at = timezone.now()
         user_task.save()
 
-        # Existing anti-cheat: checks task duration / speed
-        check_task_speed(user_task)
+        # FRAUD CHECK
+        try:
+            check_task_speed(user_task)
+        except Exception as e:
+            return Response({"detail": str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
         reward = user_task.task.reward_coins
 
-        # Update fraud counters if you implemented register_earn on User
-        if hasattr(user, "register_earn"):
-            # IMPORTANT: register_earn should only update tracking fields,
-            # not coins_balance itself – we do the coin increment below.
-            user.register_earn()
-
-        # Add reward to user's coin balance
+        # UPDATE counters
+        user.register_earn()
         user.coins_balance += reward
-        user.save()
+        user.save(update_fields=["coins_balance"])
 
         WalletTransaction.objects.create(
             user=user,
@@ -160,82 +145,61 @@ class TaskCompleteView(APIView):
         return Response({"message": "Task completed", "reward_coins": reward})
 
 
+# -----------------------------
+#  WALLET SYSTEM
+# -----------------------------
 class WalletView(APIView):
     def get(self, request):
         user = request.user
-        rate_str = Settings.get_value("COIN_TO_RS_RATE", "0.05")
-        try:
-            rate = float(rate_str)
-        except ValueError:
-            rate = 0.05
 
+        rate = float(Settings.get_value("COIN_TO_RS_RATE", "0.05"))
         balance_rs = user.coins_balance * rate
 
-        transactions = (
-            WalletTransaction.objects.filter(user=user)
-            .order_by("-created_at")[:50]
-        )
-        tx_serializer = WalletTransactionSerializer(transactions, many=True)
+        tx = WalletTransaction.objects.filter(user=user).order_by("-created_at")[:50]
 
-        return Response(
-            {
-                "coins_balance": user.coins_balance,
-                "approx_balance_rs": round(balance_rs, 2),
-                "coin_to_rs_rate": rate,
-                "transactions": tx_serializer.data,
-            }
-        )
+        return Response({
+            "coins_balance": user.coins_balance,
+            "approx_balance_rs": round(balance_rs, 2),
+            "coin_to_rs_rate": rate,
+            "transactions": WalletTransactionSerializer(tx, many=True).data,
+        })
 
 
+# -----------------------------
+#  WITHDRAW SYSTEM
+# -----------------------------
 class WithdrawRequestView(APIView):
     def post(self, request):
         user = request.user
+
         amount_rs = request.data.get("amount_rs")
         method = request.data.get("method")
         account_id = request.data.get("account_id")
 
         if not amount_rs or not method or not account_id:
-            return Response(
-                {"detail": "amount_rs, method, account_id are required"},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
+            return Response({"detail": "amount_rs, method, account_id are required"},
+                            status=status.HTTP_400_BAD_REQUEST)
 
         try:
             amount_rs = float(amount_rs)
-        except ValueError:
-            return Response(
-                {"detail": "Invalid amount"},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
+        except:
+            return Response({"detail": "Invalid amount"}, status=status.HTTP_400_BAD_REQUEST)
 
-        rate_str = Settings.get_value("COIN_TO_RS_RATE", "0.05")
-        try:
-            rate = float(rate_str)
-        except ValueError:
-            rate = 0.05
+        rate = float(Settings.get_value("COIN_TO_RS_RATE", "0.05"))
+        min_rs = float(Settings.get_value("MIN_WITHDRAW_RS", "50"))
 
-        min_withdraw_rs_str = Settings.get_value("MIN_WITHDRAW_RS", "50")
-        min_withdraw_rs = float(min_withdraw_rs_str)
-
-        if amount_rs < min_withdraw_rs:
-            return Response(
-                {"detail": f"Minimum withdraw is Rs {min_withdraw_rs}"},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
+        if amount_rs < min_rs:
+            return Response({"detail": f"Minimum withdraw is Rs {min_rs}"}, status=status.HTTP_400_BAD_REQUEST)
 
         coins_needed = int(amount_rs / rate)
 
         if user.coins_balance < coins_needed:
-            return Response(
-                {"detail": "Insufficient balance"},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
+            return Response({"detail": "Insufficient balance"}, status=status.HTTP_400_BAD_REQUEST)
 
-        # Deduct coins immediately
+        # Deduct coins
         user.coins_balance -= coins_needed
         user.save()
 
-        # Status/admin_note/processed_at are handled in the model
         WithdrawRequest.objects.create(
             user=user,
             amount_rs=amount_rs,
@@ -251,17 +215,10 @@ class WithdrawRequestView(APIView):
             note=f"Withdraw request via {method}",
         )
 
-        return Response(
-            {"message": "Withdraw request created"},
-            status=status.HTTP_201_CREATED,
-        )
+        return Response({"message": "Withdraw request created"}, status=status.HTTP_201_CREATED)
 
 
 class UserWithdrawListView(APIView):
     def get(self, request):
-        withdraws = (
-            WithdrawRequest.objects.filter(user=request.user)
-            .order_by("-created_at")
-        )
-        serializer = WithdrawRequestSerializer(withdraws, many=True)
-        return Response(serializer.data)
+        w = WithdrawRequest.objects.filter(user=request.user).order_by("-created_at")
+        return Response(WithdrawRequestSerializer(w, many=True).data)

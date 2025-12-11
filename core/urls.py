@@ -12,22 +12,28 @@ from .views import (
     WithdrawRequestView,
     UserWithdrawListView,
 )
+
 from .views_daily_bonus import DailyBonusView
 from .views_referrals import ReferralAnalyticsView
-from .views_daily_bonus import DailyBonusView
-
 
 
 urlpatterns = [
-    # Auth
+
+    # -------------------------
+    # AUTH
+    # -------------------------
     path("auth/token/", CustomTokenObtainPairView.as_view(), name="token_obtain_pair"),
     path("auth/token/refresh/", TokenRefreshView.as_view(), name="token_refresh"),
     path("auth/register/", RegisterView.as_view(), name="register"),
 
-    # User profile
+    # -------------------------
+    # USER PROFILE
+    # -------------------------
     path("me/", MeView.as_view(), name="me"),
 
-    # Tasks / earning
+    # -------------------------
+    # TASK SYSTEM
+    # -------------------------
     path("tasks/", TaskListView.as_view(), name="task_list"),
     path("tasks/start/<int:task_id>/", TaskStartView.as_view(), name="task_start"),
     path(
@@ -36,14 +42,20 @@ urlpatterns = [
         name="task_complete",
     ),
 
-    # Wallet & withdraw
+    # -------------------------
+    # WALLET + WITHDRAW
+    # -------------------------
     path("wallet/", WalletView.as_view(), name="wallet"),
     path("withdraw/", WithdrawRequestView.as_view(), name="withdraw_request"),
     path("withdraws/", UserWithdrawListView.as_view(), name="withdraw_list"),
 
-    # NEW: daily bonus
+    # -------------------------
+    # DAILY BONUS
+    # -------------------------
     path("daily-bonus/", DailyBonusView.as_view(), name="daily_bonus"),
 
-    # NEW: referral analytics for the logged-in user
+    # -------------------------
+    # REFERRAL ANALYTICS
+    # -------------------------
     path("referrals/", ReferralAnalyticsView.as_view(), name="referrals"),
 ]

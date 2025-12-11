@@ -10,10 +10,16 @@ from .models import (
 User = get_user_model()
 
 
+# -----------------------------------------------------------
+# REGISTER SERIALIZER
+# -----------------------------------------------------------
+
 class RegisterSerializer(serializers.ModelSerializer):
     password = serializers.CharField(write_only=True)
     confirm_password = serializers.CharField(write_only=True)
-    referral_code = serializers.CharField(write_only=True, required=False, allow_blank=True)
+    referral_code = serializers.CharField(
+        write_only=True, required=False, allow_blank=True
+    )
 
     class Meta:
         model = User
@@ -27,31 +33,33 @@ class RegisterSerializer(serializers.ModelSerializer):
         )
 
     def validate(self, attrs):
-        password = attrs.get("password")
-        confirm_password = attrs.pop("confirm_password", None)
+        pwd = attrs.get("password")
+        confirm = attrs.pop("confirm_password", None)
 
-        if password != confirm_password:
-            raise serializers.ValidationError({"confirm_password": "Passwords do not match."})
+        if pwd != confirm:
+            raise serializers.ValidationError(
+                {"confirm_password": "Passwords do not match."}
+            )
+
         return attrs
 
     def create(self, validated_data):
-        referral_code = validated_data.pop("referral_code", "").strip()
+        referral_code = validated_data.pop("referral_code", "").strip().upper()
         password = validated_data.pop("password")
 
+        # CREATE USER
         user = User(**validated_data)
         user.set_password(password)
 
-        # generate ref_code if missing
-        if not getattr(user, "ref_code", None):
-            import random
-            import string
+        # generate referral code if missing
+        if not user.ref_code:
+            import random, string
+            user.ref_code = "".join(random.choices(
+                string.ascii_uppercase + string.digits, k=8
+            ))
 
-            user.ref_code = "".join(
-                random.choices(string.ascii_uppercase + string.digits, k=8)
-            )
-
-        # referred_by
-        if referral_code:
+        # APPLY REFERRAL ONLY IF VALID
+        if referral_code and referral_code != user.ref_code:
             try:
                 referrer = User.objects.get(ref_code=referral_code)
                 user.referred_by = referrer
@@ -60,13 +68,14 @@ class RegisterSerializer(serializers.ModelSerializer):
 
         user.save()
 
-        # referral bonuses
-        if getattr(user, "referred_by", None):
+        # APPLY REFERRAL BONUS (AFTER SAVE)
+        if user.referred_by:
             referrer_bonus = 50
             user_bonus = 20
 
             user.referred_by.coins_balance += referrer_bonus
-            user.referred_by.save()
+            user.referred_by.save(update_fields=["coins_balance"])
+
             WalletTransaction.objects.create(
                 user=user.referred_by,
                 type="referral",
@@ -75,7 +84,8 @@ class RegisterSerializer(serializers.ModelSerializer):
             )
 
             user.coins_balance += user_bonus
-            user.save()
+            user.save(update_fields=["coins_balance"])
+
             WalletTransaction.objects.create(
                 user=user,
                 type="bonus",
@@ -85,6 +95,10 @@ class RegisterSerializer(serializers.ModelSerializer):
 
         return user
 
+
+# -----------------------------------------------------------
+# USER SERIALIZER
+# -----------------------------------------------------------
 
 class UserSerializer(serializers.ModelSerializer):
     class Meta:
@@ -100,6 +114,10 @@ class UserSerializer(serializers.ModelSerializer):
         )
 
 
+# -----------------------------------------------------------
+# TASK SERIALIZER
+# -----------------------------------------------------------
+
 class TaskSerializer(serializers.ModelSerializer):
     class Meta:
         model = Task
@@ -114,6 +132,10 @@ class TaskSerializer(serializers.ModelSerializer):
         )
 
 
+# -----------------------------------------------------------
+# WALLET SERIALIZER
+# -----------------------------------------------------------
+
 class WalletTransactionSerializer(serializers.ModelSerializer):
     class Meta:
         model = WalletTransaction
@@ -126,6 +148,10 @@ class WalletTransactionSerializer(serializers.ModelSerializer):
             "created_at",
         )
 
+
+# -----------------------------------------------------------
+# WITHDRAW SERIALIZER
+# -----------------------------------------------------------
 
 class WithdrawRequestSerializer(serializers.ModelSerializer):
     class Meta:
@@ -142,6 +168,29 @@ class WithdrawRequestSerializer(serializers.ModelSerializer):
         ]
         read_only_fields = ["status", "admin_note", "created_at", "processed_at"]
 
+    def validate_amount_rs(self, value):
+        """Ensure withdraw amount is positive."""
+        if value <= 0:
+            raise serializers.ValidationError("Amount must be greater than zero.")
+        return value
+
     def create(self, validated_data):
         user = self.context["request"].user
         return WithdrawRequest.objects.create(user=user, **validated_data)
+
+
+# -----------------------------------------------------------
+# REFERRAL ANALYTICS SERIALIZER
+# -----------------------------------------------------------
+
+class ReferralUserSummarySerializer(serializers.ModelSerializer):
+    """Used by ReferralAnalyticsView to show invited user's progress."""
+
+    class Meta:
+        model = User
+        fields = [
+            "id",
+            "username",
+            "coins_balance",
+            "fraud_score",
+        ]
