@@ -1,200 +1,126 @@
-# core/cpx.py
-from __future__ import annotations
+import os
+from urllib.parse import urlencode
 
-from decimal import Decimal, InvalidOperation
-
-from django.conf import settings
-from django.http import JsonResponse, HttpResponse, HttpResponseBadRequest
+from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
-from django.views.decorators.http import require_http_methods
-from django.db import transaction
 from django.utils import timezone
+from django.contrib.auth import get_user_model
 
-from .models import User, WalletTransaction, CPXTransaction
+from .models import CPXTransaction, WalletTransaction, Settings
 
-
-def _get_user_from_ext_user_id(ext_user_id: str) -> User | None:
-    """
-    ext_user_id is whatever you send to CPX as &ext_user_id=...
-    Support both:
-      - numeric user.id
-      - username
-    """
-    if not ext_user_id:
-        return None
-
-    # numeric = user.id
-    if ext_user_id.isdigit():
-        return User.objects.filter(id=int(ext_user_id)).first()
-
-    # otherwise = username
-    return User.objects.filter(username=ext_user_id).first()
+User = get_user_model()
 
 
 def cpx_wall_url(request):
     """
-    Build offerwall URL.
-    You should pass a stable identifier as ext_user_id.
-    Recommended: user.id (numeric).
-    Example: /api/cpx/wall/?user_id=12
+    Returns a CPX offerwall URL for the logged-in user.
+    Frontend will open this in an iframe.
     """
-    user_id = request.GET.get("user_id")
-    if not user_id:
-        return HttpResponseBadRequest("Missing user_id")
-
-    app_id = getattr(settings, "CPX_APP_ID", None)
+    user = request.user
+    app_id = os.environ.get("CPX_APP_ID", "")
     if not app_id:
-        return HttpResponseBadRequest("Missing CPX_APP_ID in settings")
+        return JsonResponse({"detail": "CPX_APP_ID missing"}, status=500)
 
-    # You can also add &secure_hash=... if CPX enabled hashing for your account.
-    url = f"https://offers.cpx-research.com/index.php?app_id={app_id}&ext_user_id={user_id}"
+    # ext_user_id: IMPORTANT
+    # Use a stable unique value. Best: user.id (integer). Do NOT change later.
+    ext_user_id = str(user.id)
+
+    # Optional: a token you set yourself (NOT CPX secret). Helps validate postbacks.
+    postback_token = os.environ.get("CPX_POSTBACK_TOKEN", "")
+
+    params = {
+        "app_id": app_id,
+        "ext_user_id": ext_user_id,
+    }
+
+    # If CPX allows custom params, we pass a token too (many offerwalls allow it).
+    # If CPX ignores unknown params, it won't break anything.
+    if postback_token:
+        params["token"] = postback_token
+
+    url = "https://offers.cpx-research.com/index.php?" + urlencode(params)
     return JsonResponse({"url": url})
 
 
 @csrf_exempt
-@require_http_methods(["GET", "POST"])
 def cpx_postback(request):
     """
-    CPX Postback endpoint.
-    - Idempotent: same trans_id won't pay twice
-    - Writes WalletTransaction
-    - Updates User.coins_balance
-    - Marks CPXTransaction.applied=True once paid
+    CPX server-to-server callback.
+    You will paste this URL in CPX Postback settings.
 
-    IMPORTANT:
-    - If CPX provides secure_hash verification, you MUST verify it here according to CPX docs.
-      (I am not guessing the hash formula, because using the wrong one can break payouts.)
+    We credit coins once per unique trans_id.
     """
 
-    data = request.GET if request.method == "GET" else request.POST
+    # CPX often sends these as query params
+    trans_id = request.GET.get("trans_id") or request.POST.get("trans_id")
+    ext_user_id = request.GET.get("ext_user_id") or request.POST.get("ext_user_id")
+    amount_local = request.GET.get("amount_local") or request.POST.get("amount_local") or "0"
+    status = request.GET.get("status") or request.POST.get("status") or "1"
+    event = request.GET.get("event") or request.POST.get("event") or "complete"
 
-    # CPX commonly sends these (names can vary slightly)
-    trans_id = (data.get("trans_id") or "").strip()
-    ext_user_id = (data.get("user_id") or data.get("ext_user_id") or "").strip()
-    event = (data.get("event") or "complete").strip().lower()  # complete|out|bonus|cancel...
-    status_raw = (data.get("status") or "1").strip()
-
-    amount_local_raw = (data.get("amount_local") or "0").strip()  # coins in your system
-    amount_usd_raw = (data.get("amount_usd") or "0").strip()
-
-    secure_hash = (data.get("secure_hash") or "").strip()
+    # Optional: our own token check (recommended)
+    expected = os.environ.get("CPX_POSTBACK_TOKEN", "")
+    got = request.GET.get("token") or request.POST.get("token") or ""
+    if expected and got != expected:
+        return JsonResponse({"detail": "invalid token"}, status=403)
 
     if not trans_id or not ext_user_id:
-        return HttpResponseBadRequest("Missing trans_id or user_id/ext_user_id")
-
-    # --- OPTIONAL: secure_hash verification gate (turn on when CPX gives you the exact formula)
-    # If you want to enforce it, set CPX_REQUIRE_SECURE_HASH=True in settings,
-    # and implement verify function below exactly as per CPX docs.
-    require_hash = getattr(settings, "CPX_REQUIRE_SECURE_HASH", False)
-    if require_hash and not secure_hash:
-        return HttpResponse("missing_secure_hash", status=403)
-
-    # ---- parse numeric fields safely
-    try:
-        status = int(status_raw)
-    except ValueError:
-        status = 1
+        return JsonResponse({"detail": "missing trans_id/ext_user_id"}, status=400)
 
     try:
-        amount_local = int(Decimal(amount_local_raw))
-    except (InvalidOperation, ValueError):
-        amount_local = 0
+        coins = int(float(amount_local))
+    except Exception:
+        coins = 0
 
-    # We store USD just for logging
+    # Only credit on status=1 (completed). If CPX uses different codes, adjust here.
     try:
-        amount_usd = Decimal(amount_usd_raw)
-    except (InvalidOperation, ValueError):
-        amount_usd = Decimal("0")
+        status_int = int(status)
+    except Exception:
+        status_int = 1
 
-    user = _get_user_from_ext_user_id(ext_user_id)
-    if not user:
-        return HttpResponse("unknown_user", status=404)
+    # Create transaction row (dedupe)
+    obj, created = CPXTransaction.objects.get_or_create(
+        trans_id=trans_id,
+        defaults={
+            "user_id": int(ext_user_id),
+            "event": event,
+            "status": status_int,
+            "amount_local": coins,
+            "applied": False,
+        },
+    )
 
-    # Decide whether this event should reward user
-    # - "complete" => reward
-    # - "bonus" => reward
-    # - "out" (screen-out) => you can reward small bonus if you want
-    # - "cancel" => no reward
-    rewardable_events = {"complete", "bonus", "out"}
-    if event not in rewardable_events:
-        # still record transaction as not applied (optional)
-        CPXTransaction.objects.get_or_create(
-            trans_id=trans_id,
-            defaults={
-                "user": user,
-                "event": event[:20],
-                "status": status,
-                "amount_local": 0,
-                "applied": False,
-            },
-        )
-        return HttpResponse("ok", status=200)
+    # If already exists, just return OK (prevents double-credit)
+    if not created:
+        return JsonResponse({"ok": True, "duplicate": True})
 
-    # If amount_local is 0 for out/bonus, you can give a fixed minimal bonus
-    if amount_local <= 0:
-        # keep small to avoid abuse; adjust as you like
-        if event == "out":
-            amount_local = 5
-        elif event == "bonus":
-            amount_local = 10
-        else:
-            amount_local = 0
+    # Only credit if status=1 and not applied
+    if status_int != 1 or coins <= 0:
+        return JsonResponse({"ok": True, "credited": False})
 
-    # No money -> no coins
-    if amount_local <= 0:
-        CPXTransaction.objects.get_or_create(
-            trans_id=trans_id,
-            defaults={
-                "user": user,
-                "event": event[:20],
-                "status": status,
-                "amount_local": 0,
-                "applied": False,
-            },
-        )
-        return HttpResponse("ok", status=200)
+    # Credit user
+    try:
+        user = User.objects.get(id=int(ext_user_id))
+    except User.DoesNotExist:
+        return JsonResponse({"detail": "user not found"}, status=404)
 
-    # --- Idempotent apply
-    with transaction.atomic():
-        tx, created = CPXTransaction.objects.select_for_update().get_or_create(
-            trans_id=trans_id,
-            defaults={
-                "user": user,
-                "event": event[:20],
-                "status": status,
-                "amount_local": amount_local,
-                "applied": False,
-            },
-        )
+    # Apply coins
+    user.coins_balance += coins
+    # also update daily counters if you want
+    if hasattr(user, "register_earn"):
+        user.register_earn()
+    else:
+        user.save(update_fields=["coins_balance"])
 
-        # If already applied, do nothing (prevents double payment)
-        if tx.applied:
-            return HttpResponse("ok", status=200)
+    WalletTransaction.objects.create(
+        user=user,
+        type="earn",
+        coins=coins,
+        note=f"CPX Offerwall reward (trans_id={trans_id})",
+    )
 
-        # If transaction exists but amount differs, keep the first one (safer)
-        if not created:
-            tx.event = event[:20]
-            tx.status = status
-            if tx.amount_local <= 0:
-                tx.amount_local = amount_local
-            tx.save(update_fields=["event", "status", "amount_local"])
+    obj.user = user
+    obj.applied = True
+    obj.save(update_fields=["user", "applied"])
 
-        # Apply coins
-        user.coins_balance += int(tx.amount_local)
-        user.last_earn_time = timezone.now()
-        user.save(update_fields=["coins_balance", "last_earn_time"])
-
-        # Wallet history
-        WalletTransaction.objects.create(
-            user=user,
-            type="bonus" if event == "bonus" else "earn",
-            coins=int(tx.amount_local),
-            amount_rs=Decimal("0"),
-            note=f"CPX {event} | trans_id={tx.trans_id} | usd={amount_usd}",
-        )
-
-        tx.applied = True
-        tx.save(update_fields=["applied"])
-
-    # CPX usually accepts plain "ok"
-    return HttpResponse("ok", status=200)
+    return JsonResponse({"ok": True, "credited": True, "coins": coins})

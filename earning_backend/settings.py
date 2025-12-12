@@ -222,5 +222,7 @@ CPX_SECURITY_HASH = os.getenv("CPX_SECURITY_HASH", "")
 CPX_CURRENCY_FACTOR = int(os.getenv("CPX_CURRENCY_FACTOR", "1000"))
 
 
+CPX_SECRET = os.environ.get("CPX_SECRET", "")  
+
 
 CPX_REQUIRE_SECURE_HASH = os.getenv("CPX_REQUIRE_SECURE_HASH", "false").lower() == "true"
