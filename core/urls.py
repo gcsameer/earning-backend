@@ -1,5 +1,7 @@
 from django.urls import path
 from rest_framework_simplejwt.views import TokenRefreshView
+from .views_cpx import cpx_postback
+from core.views_cpx import cpx_postback
 
 from .views import (
     CustomTokenObtainPairView,
@@ -40,6 +42,8 @@ urlpatterns = [
         "tasks/complete/<int:user_task_id>/",
         TaskCompleteView.as_view(),
         name="task_complete",
+
+    
     ),
 
     # -------------------------
@@ -58,4 +62,5 @@ urlpatterns = [
     # REFERRAL ANALYTICS
     # -------------------------
     path("referrals/", ReferralAnalyticsView.as_view(), name="referrals"),
+    path("cpx/postback/", cpx_postback),
 ]

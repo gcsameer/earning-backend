@@ -225,3 +225,17 @@ class FraudEvent(models.Model):
 
     def __str__(self):
         return f"{self.user} - {self.event_type} ({self.score})"
+    
+
+class CPXTransaction(models.Model):
+
+    trans_id = models.CharField(max_length=100, unique=True)
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+    event = models.CharField(max_length=20, default="complete")  # complete|out|bonus|cancel
+    status = models.IntegerField(default=1)  # 1 or 2
+    amount_local = models.IntegerField(default=0)  # coins
+    applied = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.trans_id} ({self.user})"
