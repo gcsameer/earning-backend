@@ -1,126 +1,128 @@
 import os
 from urllib.parse import urlencode
 
-from django.http import JsonResponse
-from django.views.decorators.csrf import csrf_exempt
-from django.utils import timezone
-from django.contrib.auth import get_user_model
+from django.conf import settings
+from rest_framework.decorators import api_view, permission_classes
+from rest_framework.permissions import IsAuthenticated, AllowAny
+from rest_framework.response import Response
+from rest_framework import status
 
-from .models import CPXTransaction, WalletTransaction, Settings
-
-User = get_user_model()
+from .models import CPXTransaction, WalletTransaction
 
 
-def cpx_wall_url(request):
+def _get_env(name: str, default: str = "") -> str:
+    return os.getenv(name, default).strip()
+
+
+def build_cpx_wall_url(user):
     """
-    Returns a CPX offerwall URL for the logged-in user.
-    Frontend will open this in an iframe.
+    ext_user_id MUST be unique per user. Best = user.id (stable).
     """
-    user = request.user
-    app_id = os.environ.get("CPX_APP_ID", "")
+    app_id = _get_env("CPX_APP_ID")
+    secure_hash = _get_env("CPX_SECURE_HASH")
+
     if not app_id:
-        return JsonResponse({"detail": "CPX_APP_ID missing"}, status=500)
+        return None, "CPX_APP_ID missing"
+    if not secure_hash:
+        return None, "CPX_SECURE_HASH missing"
 
-    # ext_user_id: IMPORTANT
-    # Use a stable unique value. Best: user.id (integer). Do NOT change later.
-    ext_user_id = str(user.id)
+    ext_user_id = str(user.id)  # ✅ stable unique id
+    currency = _get_env("CPX_CURRENCY", "coins")
 
-    # Optional: a token you set yourself (NOT CPX secret). Helps validate postbacks.
-    postback_token = os.environ.get("CPX_POSTBACK_TOKEN", "")
+    # CPX offers URL (works for web iframe)
+    base = "https://offers.cpx-research.com/index.php"
 
     params = {
         "app_id": app_id,
         "ext_user_id": ext_user_id,
+        "secure_hash": secure_hash,
+        "currency": currency,
     }
 
-    # If CPX allows custom params, we pass a token too (many offerwalls allow it).
-    # If CPX ignores unknown params, it won't break anything.
-    if postback_token:
-        params["token"] = postback_token
-
-    url = "https://offers.cpx-research.com/index.php?" + urlencode(params)
-    return JsonResponse({"url": url})
+    return f"{base}?{urlencode(params)}", None
 
 
-@csrf_exempt
+@api_view(["GET"])
+@permission_classes([IsAuthenticated])
+def cpx_wall_url(request):
+    url, err = build_cpx_wall_url(request.user)
+    if err:
+        return Response({"detail": err}, status=status.HTTP_400_BAD_REQUEST)
+    return Response({"url": url})
+
+
+@api_view(["GET"])
+@permission_classes([AllowAny])
 def cpx_postback(request):
     """
-    CPX server-to-server callback.
-    You will paste this URL in CPX Postback settings.
+    CPX will call your URL like:
+    /api/cpx/postback/?trans_id=...&ext_user_id=...&amount=...&status=1&event=complete
 
-    We credit coins once per unique trans_id.
+    We:
+    - Ensure trans_id is processed once
+    - Credit coins to the user
     """
-
-    # CPX often sends these as query params
-    trans_id = request.GET.get("trans_id") or request.POST.get("trans_id")
-    ext_user_id = request.GET.get("ext_user_id") or request.POST.get("ext_user_id")
-    amount_local = request.GET.get("amount_local") or request.POST.get("amount_local") or "0"
-    status = request.GET.get("status") or request.POST.get("status") or "1"
-    event = request.GET.get("event") or request.POST.get("event") or "complete"
-
-    # Optional: our own token check (recommended)
-    expected = os.environ.get("CPX_POSTBACK_TOKEN", "")
-    got = request.GET.get("token") or request.POST.get("token") or ""
-    if expected and got != expected:
-        return JsonResponse({"detail": "invalid token"}, status=403)
+    trans_id = request.query_params.get("trans_id") or request.query_params.get("transaction_id")
+    ext_user_id = request.query_params.get("ext_user_id")
+    amount = request.query_params.get("amount") or "0"
+    status_str = request.query_params.get("status") or "1"
+    event = (request.query_params.get("event") or "complete").lower()
 
     if not trans_id or not ext_user_id:
-        return JsonResponse({"detail": "missing trans_id/ext_user_id"}, status=400)
+        return Response({"detail": "missing trans_id or ext_user_id"}, status=400)
 
     try:
-        coins = int(float(amount_local))
-    except Exception:
+        user_id = int(ext_user_id)
+    except ValueError:
+        return Response({"detail": "invalid ext_user_id"}, status=400)
+
+    User = settings.AUTH_USER_MODEL
+
+    # Import your user model properly
+    from django.contrib.auth import get_user_model
+    U = get_user_model()
+
+    try:
+        user = U.objects.get(id=user_id)
+    except U.DoesNotExist:
+        return Response({"detail": "user not found"}, status=404)
+
+    # Make sure amount is int coins
+    try:
+        coins = int(float(amount))
+    except ValueError:
         coins = 0
 
-    # Only credit on status=1 (completed). If CPX uses different codes, adjust here.
-    try:
-        status_int = int(status)
-    except Exception:
-        status_int = 1
-
-    # Create transaction row (dedupe)
-    obj, created = CPXTransaction.objects.get_or_create(
+    # Idempotency: only apply a transaction once
+    tx, created = CPXTransaction.objects.get_or_create(
         trans_id=trans_id,
         defaults={
-            "user_id": int(ext_user_id),
+            "user": user,
             "event": event,
-            "status": status_int,
+            "status": int(status_str),
             "amount_local": coins,
             "applied": False,
         },
     )
 
-    # If already exists, just return OK (prevents double-credit)
     if not created:
-        return JsonResponse({"ok": True, "duplicate": True})
+        # If already applied, just return OK (CPX may retry)
+        return Response({"ok": True, "duplicate": True})
 
-    # Only credit if status=1 and not applied
-    if status_int != 1 or coins <= 0:
-        return JsonResponse({"ok": True, "credited": False})
-
-    # Credit user
-    try:
-        user = User.objects.get(id=int(ext_user_id))
-    except User.DoesNotExist:
-        return JsonResponse({"detail": "user not found"}, status=404)
-
-    # Apply coins
-    user.coins_balance += coins
-    # also update daily counters if you want
-    if hasattr(user, "register_earn"):
-        user.register_earn()
-    else:
+    # Apply only if status=1 and event is complete/bonus/out (you decide)
+    if int(status_str) == 1 and coins > 0:
+        user.coins_balance += coins
         user.save(update_fields=["coins_balance"])
 
-    WalletTransaction.objects.create(
-        user=user,
-        type="earn",
-        coins=coins,
-        note=f"CPX Offerwall reward (trans_id={trans_id})",
-    )
+        WalletTransaction.objects.create(
+            user=user,
+            type="earn",
+            coins=coins,
+            amount_rs=0,
+            note=f"CPX {event} (trans_id={trans_id})",
+        )
 
-    obj.user = user
-    obj.applied = True
-    obj.save(update_fields=["user", "applied"])
+        tx.applied = True
+        tx.save(update_fields=["applied"])
 
-    return JsonResponse({"ok": True, "credited": True, "coins": coins})
+    return Response({"ok": True})
