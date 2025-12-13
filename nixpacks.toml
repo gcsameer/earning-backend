@@ -10,7 +10,8 @@ commands = [
 
 [phases.migrate]
 commands = [
-    "python manage.py migrate --noinput"
+    "python manage.py migrate --noinput",
+    "python manage.py create_game_tasks"
 ]
 
 [phases.build]
