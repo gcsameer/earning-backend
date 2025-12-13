@@ -9,6 +9,7 @@ from .models import (
     WalletTransaction,
     WithdrawRequest,
     FraudEvent,
+    CPXTransaction,
 )
 
 
@@ -111,3 +112,15 @@ class FraudEventAdmin(admin.ModelAdmin):
     list_filter = ("event_type",)
     search_fields = ("user__username", "reason")
     list_select_related = ("user",)
+
+
+# -----------------------------------------
+# CPX TRANSACTION ADMIN
+# -----------------------------------------
+@admin.register(CPXTransaction)
+class CPXTransactionAdmin(admin.ModelAdmin):
+    list_display = ("trans_id", "user", "event", "status", "amount_local", "applied", "created_at")
+    list_filter = ("event", "status", "applied")
+    search_fields = ("trans_id", "user__username")
+    list_select_related = ("user",)
+    readonly_fields = ("trans_id", "created_at")
