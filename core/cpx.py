@@ -18,8 +18,11 @@ def build_cpx_wall_url(user):
     """
     ext_user_id MUST be unique per user. Best = user.id (stable).
     """
-    app_id = _get_env("CPX_APP_ID")
-    secure_hash = _get_env("CPX_SECURE_HASH")
+    # app_id = _get_env("CPX_APP_ID")
+    # secure_hash = _get_env("CPX_SECURE_HASH")
+
+    app_id = _get_env("30414")
+    secure_hash = _get_env("ch0T7KHYJBF4KqC0x22HICZ1B33")
 
     if not app_id:
         return None, "CPX_APP_ID missing"
