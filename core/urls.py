@@ -1,7 +1,5 @@
 from django.urls import path
 from rest_framework_simplejwt.views import TokenRefreshView
-from .views_cpx import cpx_postback
-# from core.views_cpx import cpx_postback
 from .cpx import cpx_wall_url, cpx_postback
 
 from .views import (
@@ -43,8 +41,6 @@ urlpatterns = [
         "tasks/complete/<int:user_task_id>/",
         TaskCompleteView.as_view(),
         name="task_complete",
-
-    
     ),
 
     # -------------------------

@@ -100,18 +100,9 @@ WSGI_APPLICATION = "earning_backend.wsgi.application"
 
 # ---------------------------------------------------------------------
 # Database
-# ---------------------------------------------------------------------
-
-# ---------------------------------------------------------------------
-# Database
 #   - Locally: use SQLite (simpler, no Postgres needed)
 #   - On Railway: use Postgres via env vars
 # ---------------------------------------------------------------------
-
-import os
-from pathlib import Path
-
-BASE_DIR = Path(__file__).resolve().parent.parent
 
 if os.environ.get("RAILWAY_ENVIRONMENT"):  # True on Railway
     DATABASES = {
@@ -215,14 +206,8 @@ LOGGING = {
     },
 }
 
-CPX_SECURITY_HASH = "cH0T7KHiYJBFKLFqc0k22HICZ1B33"
-
 CPX_APP_ID = os.getenv("CPX_APP_ID", "")
-CPX_SECURITY_HASH = os.getenv("CPX_SECURITY_HASH", "")
+CPX_SECURITY_HASH = os.getenv("CPX_SECURITY_HASH", "cH0T7KHiYJBFKLFqc0k22HICZ1B33")
 CPX_CURRENCY_FACTOR = int(os.getenv("CPX_CURRENCY_FACTOR", "1000"))
-
-
-CPX_SECRET = os.environ.get("CPX_SECRET", "")  
-
-
+CPX_SECRET = os.environ.get("CPX_SECRET", "")
 CPX_REQUIRE_SECURE_HASH = os.getenv("CPX_REQUIRE_SECURE_HASH", "false").lower() == "true"

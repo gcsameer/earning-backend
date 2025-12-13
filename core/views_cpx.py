@@ -17,7 +17,7 @@ def _md5(s: str) -> str:
 
 def _verify_cpx_hash(user_id: str, secure_hash_from_cpx: str) -> bool:
     # CPX formula: md5(ext_user_id + "-" + your_secure_hash)
-    expected = _md5(f"{user_id}-{settings.CPX_SECURE_HASH}")
+    expected = _md5(f"{user_id}-{settings.CPX_SECURITY_HASH}")
     return secure_hash_from_cpx == expected
 
 
@@ -46,8 +46,8 @@ def cpx_postback(request):
     if not (user_id and trans_id and status and secure_hash):
         return HttpResponseBadRequest("Missing required parameters")
 
-    if not settings.CPX_SECURE_HASH:
-        return HttpResponseBadRequest("Server missing CPX_SECURE_HASH")
+    if not settings.CPX_SECURITY_HASH:
+        return HttpResponseBadRequest("Server missing CPX_SECURITY_HASH")
 
     if not _verify_cpx_hash(user_id, secure_hash):
         return HttpResponseBadRequest("Invalid secure_hash")
@@ -89,16 +89,16 @@ def cpx_postback(request):
         # Status 1 = credit, Status 2 = reversal (deduct)
         # CPX recommends status param usage for reversals. 
         if int(status) == 1:
-            user.profile.coins += coins  # adjust to your wallet field
-            user.profile.save(update_fields=["coins"])
+            user.coins_balance += coins
+            user.save(update_fields=["coins_balance"])
             tx.applied = True
             tx.save(update_fields=["applied"])
             return JsonResponse({"ok": True, "credited": coins, "event": event})
 
         if int(status) == 2:
             # reversal: deduct but don't go negative
-            user.profile.coins = max(0, user.profile.coins - coins)
-            user.profile.save(update_fields=["coins"])
+            user.coins_balance = max(0, user.coins_balance - coins)
+            user.save(update_fields=["coins_balance"])
             tx.applied = True
             tx.save(update_fields=["applied"])
             return JsonResponse({"ok": True, "reversed": coins, "event": event})
