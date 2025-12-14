@@ -48,15 +48,20 @@ if not DEBUG:
 
 # CSRF / CORS – add your Vercel URL after you deploy frontend
 # e.g. "https://nepearn-frontend.vercel.app"
-CORS_ALLOWED_ORIGINS = os.environ.get(
+# Parse CORS origins from environment variable or use defaults
+_cors_origins_env = os.environ.get(
     "CORS_ALLOWED_ORIGINS",
     "http://localhost:3000,https://earning-frontend.vercel.app,https://nepearn.vercel.app"
-).split(",")
+)
+# Split by comma and strip whitespace from each origin
+CORS_ALLOWED_ORIGINS = [origin.strip() for origin in _cors_origins_env.split(",") if origin.strip()]
 
-CSRF_TRUSTED_ORIGINS = os.environ.get(
+_csrf_origins_env = os.environ.get(
     "CSRF_TRUSTED_ORIGINS",
     "https://earning-backend-production.up.railway.app,https://earning-frontend.vercel.app,https://nepearn.vercel.app"
-).split(",")
+)
+# Split by comma and strip whitespace from each origin
+CSRF_TRUSTED_ORIGINS = [origin.strip() for origin in _csrf_origins_env.split(",") if origin.strip()]
 
 CORS_ALLOW_CREDENTIALS = True
 
