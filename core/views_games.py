@@ -3,10 +3,10 @@ Game-based task views (scratch card, spin wheel, puzzle, quiz)
 These tasks are completed instantly and reward coins automatically.
 """
 from django.utils import timezone
-from rest_framework import status
+from rest_framework import status, permissions
 from rest_framework.response import Response
 from rest_framework.views import APIView
-from rest_framework.exceptions import PermissionDenied
+from rest_framework.exceptions import PermissionDenied, AuthenticationFailed
 import random
 
 from .models import Task, UserTask, WalletTransaction
@@ -20,9 +20,17 @@ class GameTaskCompleteView(APIView):
     Complete game-based tasks instantly (scratch card, spin wheel, puzzle, quiz).
     These tasks don't require a countdown - coins are awarded immediately.
     """
+    permission_classes = [permissions.IsAuthenticated]
     
     def post(self, request, task_id):
         try:
+            # Check authentication
+            if not request.user or not request.user.is_authenticated:
+                return Response(
+                    {"detail": "Authentication required"},
+                    status=status.HTTP_401_UNAUTHORIZED
+                )
+            
             user = request.user
             
             # DAILY LIMIT CHECK
