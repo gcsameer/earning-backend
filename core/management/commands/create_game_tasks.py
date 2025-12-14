@@ -42,6 +42,7 @@ class Command(BaseCommand):
         ]
 
         created_count = 0
+        updated_count = 0
         for task_data in tasks_data:
             task, created = Task.objects.get_or_create(
                 type=task_data['type'],
@@ -54,11 +55,23 @@ class Command(BaseCommand):
                     self.style.SUCCESS(f'Created task: {task.title}')
                 )
             else:
+                # Update existing task to ensure it's active
+                task.is_active = True
+                task.description = task_data['description']
+                task.save()
+                updated_count += 1
                 self.stdout.write(
-                    self.style.WARNING(f'Task already exists: {task.title}')
+                    self.style.WARNING(f'Task already exists, updated: {task.title}')
                 )
 
+        total_tasks = Task.objects.filter(is_active=True).count()
         self.stdout.write(
-            self.style.SUCCESS(f'\nCreated {created_count} new game tasks!')
+            self.style.SUCCESS(f'\n✅ Created {created_count} new game tasks!')
+        )
+        self.stdout.write(
+            self.style.SUCCESS(f'✅ Updated {updated_count} existing tasks!')
+        )
+        self.stdout.write(
+            self.style.SUCCESS(f'✅ Total active tasks in database: {total_tasks}')
         )
 
