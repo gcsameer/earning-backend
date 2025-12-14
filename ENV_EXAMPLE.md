@@ -16,8 +16,9 @@ DJANGO_ALLOWED_HOSTS=localhost,127.0.0.1
 # POSTGRES_PORT=5432
 
 # CORS Settings
-CORS_ALLOWED_ORIGINS=http://localhost:3000,https://your-frontend-domain.vercel.app
-CSRF_TRUSTED_ORIGINS=https://your-backend-domain.railway.app,https://your-frontend-domain.vercel.app
+# Add all your frontend domains (comma-separated, no spaces)
+CORS_ALLOWED_ORIGINS=http://localhost:3000,https://earning-frontend.vercel.app,https://nepearn.vercel.app
+CSRF_TRUSTED_ORIGINS=https://earning-backend-production.up.railway.app,https://earning-frontend.vercel.app,https://nepearn.vercel.app
 
 # CPX Research Integration
 CPX_APP_ID=your-cpx-app-id
