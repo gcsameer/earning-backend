@@ -72,7 +72,12 @@ class MeView(APIView):
 # -----------------------------
 class TaskListView(APIView):
     def get(self, request):
-        tasks = Task.objects.filter(is_active=True)
+        tasks = Task.objects.filter(is_active=True).order_by('id')
+        # Log for debugging
+        import logging
+        logger = logging.getLogger(__name__)
+        task_list = list(tasks.values('id', 'type', 'title', 'is_active'))
+        logger.info(f"TaskListView: Returning {len(task_list)} tasks: {task_list}")
         return Response(TaskSerializer(tasks, many=True).data)
 
 
