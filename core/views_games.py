@@ -113,7 +113,7 @@ class GameTaskCompleteView(APIView):
             # Award coins immediately (with transaction safety)
             user.register_earn()
             user.coins_balance += reward
-            user.save(update_fields=["coins_balance", "daily_earn_count"])
+            user.save(update_fields=["coins_balance", "last_earn_date", "daily_earn_count", "last_earn_time"])
             
             # Create wallet transaction
             WalletTransaction.objects.create(
