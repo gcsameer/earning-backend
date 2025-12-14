@@ -14,29 +14,29 @@ class Command(BaseCommand):
             {
                 'type': 'scratch_card',
                 'title': 'Scratch Card - Win Coins!',
-                'description': '🎫 Scratch the card to reveal your reward. Win between 10-80 coins instantly!',
-                'reward_coins': 0,  # Will be random 10-80
+                'description': '🎫 Scratch the card to reveal your reward. Win between 20-150 coins instantly!',
+                'reward_coins': 0,  # Will be random 20-150
                 'is_active': True,
             },
             {
                 'type': 'spin_wheel',
                 'title': 'Spin the Wheel',
-                'description': '🎡 Spin the wheel and win coins! Each spin can reward 10-50 coins instantly!',
-                'reward_coins': 0,  # Will be random 10-50
+                'description': '🎡 Spin the wheel and win coins! Each spin can reward 20-150 coins instantly!',
+                'reward_coins': 0,  # Will be random 20-150
                 'is_active': True,
             },
             {
                 'type': 'puzzle',
                 'title': 'Math Puzzle',
-                'description': 'Solve a simple math puzzle to earn coins. Win 5-20 coins for correct answers!',
-                'reward_coins': 0,  # Will be random 5-20
+                'description': 'Solve a simple math puzzle to earn coins. Win 50 coins for correct answers!',
+                'reward_coins': 0,  # Will be 50 coins fixed
                 'is_active': True,
             },
             {
                 'type': 'quiz',
                 'title': 'Quick Quiz',
-                'description': 'Answer a quiz question correctly to win coins! Earn 5-20 coins per correct answer.',
-                'reward_coins': 0,  # Will be random 5-20
+                'description': 'Answer a quiz question correctly to win coins! Earn 50 coins per correct answer.',
+                'reward_coins': 0,  # Will be 50 coins fixed
                 'is_active': True,
             },
         ]
