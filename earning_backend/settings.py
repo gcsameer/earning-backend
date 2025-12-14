@@ -50,12 +50,12 @@ if not DEBUG:
 # e.g. "https://nepearn-frontend.vercel.app"
 CORS_ALLOWED_ORIGINS = os.environ.get(
     "CORS_ALLOWED_ORIGINS",
-    "http://localhost:3000,https://earning-frontend.vercel.app"
+    "http://localhost:3000,https://earning-frontend.vercel.app,https://nepearn.vercel.app"
 ).split(",")
 
 CSRF_TRUSTED_ORIGINS = os.environ.get(
     "CSRF_TRUSTED_ORIGINS",
-    "https://earning-backend-production.up.railway.app,https://earning-frontend.vercel.app"
+    "https://earning-backend-production.up.railway.app,https://earning-frontend.vercel.app,https://nepearn.vercel.app"
 ).split(",")
 
 CORS_ALLOW_CREDENTIALS = True
