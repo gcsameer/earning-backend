@@ -17,6 +17,7 @@ from .views import (
 from .views_daily_bonus import DailyBonusView
 from .views_referrals import ReferralAnalyticsView
 from .views_games import GameTaskCompleteView
+from .views_cors_test import CORSTestView
 
 
 urlpatterns = [
@@ -62,6 +63,15 @@ urlpatterns = [
     # REFERRAL ANALYTICS
     # -------------------------
     path("referrals/", ReferralAnalyticsView.as_view(), name="referrals"),
+    
+    # -------------------------
+    # CORS TEST (for debugging)
+    # -------------------------
+    path("cors-test/", CORSTestView.as_view(), name="cors_test"),
+    
+    # -------------------------
+    # CPX
+    # -------------------------
     path("cpx/wall/", cpx_wall_url, name="cpx_wall"),
     path("cpx/postback/", cpx_postback, name="cpx_postback"),
 ]

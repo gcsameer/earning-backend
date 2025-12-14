@@ -56,12 +56,28 @@ _cors_origins_env = os.environ.get(
 # Split by comma and strip whitespace from each origin
 CORS_ALLOWED_ORIGINS = [origin.strip() for origin in _cors_origins_env.split(",") if origin.strip()]
 
+# Fallback: If CORS_ALLOWED_ORIGINS is empty or invalid, allow common origins
+if not CORS_ALLOWED_ORIGINS:
+    CORS_ALLOWED_ORIGINS = [
+        "http://localhost:3000",
+        "https://earning-frontend.vercel.app",
+        "https://nepearn.vercel.app",
+    ]
+
 _csrf_origins_env = os.environ.get(
     "CSRF_TRUSTED_ORIGINS",
     "https://earning-backend-production.up.railway.app,https://earning-frontend.vercel.app,https://nepearn.vercel.app"
 )
 # Split by comma and strip whitespace from each origin
 CSRF_TRUSTED_ORIGINS = [origin.strip() for origin in _csrf_origins_env.split(",") if origin.strip()]
+
+# Fallback: If CSRF_TRUSTED_ORIGINS is empty, use defaults
+if not CSRF_TRUSTED_ORIGINS:
+    CSRF_TRUSTED_ORIGINS = [
+        "https://earning-backend-production.up.railway.app",
+        "https://earning-frontend.vercel.app",
+        "https://nepearn.vercel.app",
+    ]
 
 CORS_ALLOW_CREDENTIALS = True
 
@@ -86,6 +102,12 @@ CORS_ALLOW_HEADERS = [
     "x-csrftoken",
     "x-requested-with",
 ]
+
+# Log CORS configuration for debugging
+import logging
+logger = logging.getLogger(__name__)
+logger.info(f"CORS_ALLOWED_ORIGINS: {CORS_ALLOWED_ORIGINS}")
+logger.info(f"CSRF_TRUSTED_ORIGINS: {CSRF_TRUSTED_ORIGINS}")
 
 # ---------------------------------------------------------------------
 # Application definition
