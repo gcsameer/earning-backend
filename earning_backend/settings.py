@@ -48,13 +48,29 @@ if not DEBUG:
 
 # CSRF / CORS – add your Vercel URL after you deploy frontend
 # e.g. "https://nepearn-frontend.vercel.app"
+# Initialize logger first for CORS logging
+import logging
+_cors_logger = logging.getLogger(__name__)
+
 # Parse CORS origins from environment variable or use defaults
 _cors_origins_env = os.environ.get(
     "CORS_ALLOWED_ORIGINS",
     "http://localhost:3000,https://earning-frontend.vercel.app,https://nepearn.vercel.app"
 )
+
 # Split by comma and strip whitespace from each origin
-CORS_ALLOWED_ORIGINS = [origin.strip() for origin in _cors_origins_env.split(",") if origin.strip()]
+# Handle both comma and space-separated values
+_cors_origins_list = []
+if _cors_origins_env:
+    # Split by comma first
+    for item in _cors_origins_env.split(","):
+        # Then split by space in case there are spaces
+        for origin in item.split():
+            origin = origin.strip()
+            if origin:
+                _cors_origins_list.append(origin)
+
+CORS_ALLOWED_ORIGINS = _cors_origins_list if _cors_origins_list else []
 
 # Fallback: If CORS_ALLOWED_ORIGINS is empty or invalid, allow common origins
 if not CORS_ALLOWED_ORIGINS:
@@ -63,6 +79,7 @@ if not CORS_ALLOWED_ORIGINS:
         "https://earning-frontend.vercel.app",
         "https://nepearn.vercel.app",
     ]
+    _cors_logger.warning("CORS_ALLOWED_ORIGINS was empty, using fallback defaults")
 
 _csrf_origins_env = os.environ.get(
     "CSRF_TRUSTED_ORIGINS",
@@ -103,11 +120,21 @@ CORS_ALLOW_HEADERS = [
     "x-requested-with",
 ]
 
-# Log CORS configuration for debugging
-import logging
-logger = logging.getLogger(__name__)
-logger.info(f"CORS_ALLOWED_ORIGINS: {CORS_ALLOWED_ORIGINS}")
-logger.info(f"CSRF_TRUSTED_ORIGINS: {CSRF_TRUSTED_ORIGINS}")
+# Explicitly allow preflight requests
+CORS_PREFLIGHT_MAX_AGE = 86400  # 24 hours
+
+# Ensure CORS middleware handles all origins properly
+# This helps with OPTIONS preflight requests
+CORS_URLS_REGEX = r'^/api/.*$'
+
+# Log CORS configuration for debugging (using the logger we created earlier)
+_cors_logger.info("=" * 50)
+_cors_logger.info("CORS Configuration:")
+_cors_logger.info(f"  CORS_ALLOWED_ORIGINS: {CORS_ALLOWED_ORIGINS}")
+_cors_logger.info(f"  CSRF_TRUSTED_ORIGINS: {CSRF_TRUSTED_ORIGINS}")
+_cors_logger.info(f"  CORS_ALLOW_CREDENTIALS: {CORS_ALLOW_CREDENTIALS}")
+_cors_logger.info(f"  CORS_ALLOW_METHODS: {CORS_ALLOW_METHODS}")
+_cors_logger.info("=" * 50)
 
 # ---------------------------------------------------------------------
 # Application definition
