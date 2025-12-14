@@ -14,37 +14,44 @@ class Command(BaseCommand):
             {
                 'type': 'scratch_card',
                 'title': 'Scratch Card - Win Coins!',
-                'description': '🎫 Scratch the card to reveal your reward. Win between 5-20 coins instantly!',
-                'reward_coins': 0,
+                'description': '🎫 Scratch the card to reveal your reward. Win between 10-80 coins instantly!',
+                'reward_coins': 0,  # Will be random 10-80
                 'is_active': True,
             },
             {
                 'type': 'spin_wheel',
                 'title': 'Spin the Wheel',
-                'description': '🎡 Spin the wheel and win coins! Each spin can reward 5-20 coins instantly!',
-                'reward_coins': 0,
+                'description': '🎡 Spin the wheel and win coins! Each spin can reward 10-50 coins instantly!',
+                'reward_coins': 0,  # Will be random 10-50
                 'is_active': True,
             },
             {
                 'type': 'puzzle',
                 'title': 'Math Puzzle',
                 'description': 'Solve a simple math puzzle to earn coins. Win 5-20 coins for correct answers!',
-                'reward_coins': 0,
+                'reward_coins': 0,  # Will be random 5-20
                 'is_active': True,
             },
             {
                 'type': 'quiz',
                 'title': 'Quick Quiz',
                 'description': 'Answer a quiz question correctly to win coins! Earn 5-20 coins per correct answer.',
-                'reward_coins': 0,
+                'reward_coins': 0,  # Will be random 5-20
                 'is_active': True,
             },
         ]
 
-        # Delete existing game tasks
+        # Delete existing game tasks and deactivate video tasks
         deleted_count = Task.objects.filter(
             type__in=['scratch_card', 'spin_wheel', 'puzzle', 'quiz']
         ).delete()[0]
+        
+        # Deactivate video tasks
+        video_deactivated = Task.objects.filter(type='video', is_active=True).update(is_active=False)
+        if video_deactivated > 0:
+            self.stdout.write(
+                self.style.WARNING(f'Deactivated {video_deactivated} video task(s)')
+            )
         
         self.stdout.write(
             self.style.WARNING(f'Deleted {deleted_count} existing game tasks')

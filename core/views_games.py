@@ -62,13 +62,24 @@ class GameTaskCompleteView(APIView):
                 status=status.HTTP_400_BAD_REQUEST
             )
         
-        # Calculate reward (random between 5-20 coins for game tasks)
+        # Calculate reward based on task type
         # Or use task.reward_coins if set
         if task.reward_coins and task.reward_coins > 0:
             reward = task.reward_coins
         else:
-            # Random reward between 5-20
-            reward = random.randint(5, 20)
+            # Different reward ranges for different task types
+            if task.type == "scratch_card":
+                # Scratch Card: 10-80 coins
+                reward = random.randint(10, 80)
+            elif task.type == "spin_wheel":
+                # Spin Wheel: 10-50 coins
+                reward = random.randint(10, 50)
+            elif task.type in ["puzzle", "quiz"]:
+                # Puzzle and Quiz: 5-20 coins (keep existing range)
+                reward = random.randint(5, 20)
+            else:
+                # Default: 5-20 coins
+                reward = random.randint(5, 20)
         
         ip = get_client_ip(request)
         device_id = request.data.get("device_id", "")

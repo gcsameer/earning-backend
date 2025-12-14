@@ -11,19 +11,20 @@ class Command(BaseCommand):
 
     def handle(self, *args, **options):
         # Game tasks with instant coin rewards
+        # Note: Video tasks are removed - only game tasks remain
         tasks_data = [
             {
                 'type': 'scratch_card',
                 'title': 'Scratch Card - Win Coins!',
-                'description': '🎫 Scratch the card to reveal your reward. Win between 5-20 coins instantly!',
-                'reward_coins': 0,  # Will be random 5-20
+                'description': '🎫 Scratch the card to reveal your reward. Win between 10-80 coins instantly!',
+                'reward_coins': 0,  # Will be random 10-80
                 'is_active': True,
             },
             {
                 'type': 'spin_wheel',
                 'title': 'Spin the Wheel',
-                'description': '🎡 Spin the wheel and win coins! Each spin can reward 5-20 coins instantly!',
-                'reward_coins': 0,  # Will be random 5-20
+                'description': '🎡 Spin the wheel and win coins! Each spin can reward 10-50 coins instantly!',
+                'reward_coins': 0,  # Will be random 10-50
                 'is_active': True,
             },
             {
@@ -41,6 +42,14 @@ class Command(BaseCommand):
                 'is_active': True,
             },
         ]
+        
+        # Deactivate any existing video tasks
+        video_tasks = Task.objects.filter(type='video', is_active=True)
+        if video_tasks.exists():
+            deactivated_count = video_tasks.update(is_active=False)
+            self.stdout.write(
+                self.style.WARNING(f'Deactivated {deactivated_count} video task(s)')
+            )
 
         created_count = 0
         updated_count = 0
