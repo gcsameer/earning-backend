@@ -1,0 +1,6 @@
+railway run python manage.py remove_video_tasks
+
+railway run python manage.py force_create_tasks
+
+railway run python manage.py verify_tasks
+
