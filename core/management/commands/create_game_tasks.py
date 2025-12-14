@@ -10,18 +10,19 @@ class Command(BaseCommand):
     help = 'Creates sample game tasks (scratch card, spin wheel, puzzle, quiz)'
 
     def handle(self, *args, **options):
+        # Game tasks with instant coin rewards
         tasks_data = [
             {
                 'type': 'scratch_card',
                 'title': 'Scratch Card - Win Coins!',
-                'description': 'Scratch the card to reveal your reward. Win between 5-20 coins!',
+                'description': '🎫 Scratch the card to reveal your reward. Win between 5-20 coins instantly!',
                 'reward_coins': 0,  # Will be random 5-20
                 'is_active': True,
             },
             {
                 'type': 'spin_wheel',
                 'title': 'Spin the Wheel',
-                'description': 'Spin the wheel and win coins! Each spin can reward 5-20 coins.',
+                'description': '🎡 Spin the wheel and win coins! Each spin can reward 5-20 coins instantly!',
                 'reward_coins': 0,  # Will be random 5-20
                 'is_active': True,
             },
