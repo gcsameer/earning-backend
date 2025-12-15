@@ -24,6 +24,7 @@ from .views_analytics import UserAnalyticsView
 from .views_streak import LoginStreakView
 from .views_achievements import AchievementsView
 from .views_challenges import DailyChallengesView
+from .views_admin import AdminWithdrawListView, AdminWithdrawDetailView, AdminWithdrawActionView
 
 
 urlpatterns = [
@@ -106,4 +107,11 @@ urlpatterns = [
     # -------------------------
     path("cpx/wall/", cpx_wall_url, name="cpx_wall"),
     path("cpx/postback/", cpx_postback, name="cpx_postback"),
+    
+    # -------------------------
+    # ADMIN (Admin only - requires IsAdminUser permission)
+    # -------------------------
+    path("admin/withdraws/", AdminWithdrawListView.as_view(), name="admin_withdraw_list"),
+    path("admin/withdraws/<int:withdraw_id>/", AdminWithdrawDetailView.as_view(), name="admin_withdraw_detail"),
+    path("admin/withdraws/<int:withdraw_id>/<str:action>/", AdminWithdrawActionView.as_view(), name="admin_withdraw_action"),
 ]

@@ -158,10 +158,17 @@ class WalletTransactionSerializer(serializers.ModelSerializer):
 # -----------------------------------------------------------
 
 class WithdrawRequestSerializer(serializers.ModelSerializer):
+    user = serializers.SerializerMethodField()
+    username = serializers.CharField(source='user.username', read_only=True)
+    user_email = serializers.CharField(source='user.email', read_only=True)
+    
     class Meta:
         model = WithdrawRequest
         fields = [
             "id",
+            "user",
+            "username",
+            "user_email",
             "amount_rs",
             "method",
             "account_id",
@@ -170,7 +177,15 @@ class WithdrawRequestSerializer(serializers.ModelSerializer):
             "created_at",
             "processed_at",
         ]
-        read_only_fields = ["status", "admin_note", "created_at", "processed_at"]
+        read_only_fields = ["status", "admin_note", "created_at", "processed_at", "user"]
+    
+    def get_user(self, obj):
+        return {
+            "id": obj.user.id,
+            "username": obj.user.username,
+            "email": obj.user.email,
+            "phone": obj.user.phone,
+        }
 
     def validate_amount_rs(self, value):
         """Ensure withdraw amount is positive."""

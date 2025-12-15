@@ -97,10 +97,64 @@ class WalletTransactionAdmin(admin.ModelAdmin):
 # -----------------------------------------
 @admin.register(WithdrawRequest)
 class WithdrawRequestAdmin(admin.ModelAdmin):
-    list_display = ("user", "amount_rs", "method", "account_id", "status", "created_at")
-    list_filter = ("method", "status")
-    search_fields = ("user__username", "account_id")
+    list_display = ("user", "amount_rs", "method", "account_id", "status", "created_at", "processed_at")
+    list_filter = ("method", "status", "created_at")
+    search_fields = ("user__username", "user__email", "account_id")
     list_select_related = ("user",)
+    readonly_fields = ("user", "amount_rs", "method", "account_id", "created_at")
+    fieldsets = (
+        ("Request Details", {
+            "fields": ("user", "amount_rs", "method", "account_id", "status", "created_at")
+        }),
+        ("Admin Actions", {
+            "fields": ("admin_note", "processed_at")
+        }),
+    )
+    
+    actions = ["approve_requests", "reject_requests", "mark_as_paid"]
+    
+    def approve_requests(self, request, queryset):
+        """Approve selected withdrawal requests"""
+        from django.utils import timezone
+        updated = queryset.filter(status=WithdrawRequest.STATUS_PENDING).update(
+            status=WithdrawRequest.STATUS_APPROVED,
+            processed_at=timezone.now()
+        )
+        self.message_user(request, f"{updated} withdrawal request(s) approved.")
+    approve_requests.short_description = "Approve selected requests"
+    
+    def reject_requests(self, request, queryset):
+        """Reject selected withdrawal requests"""
+        from django.utils import timezone
+        from django.db import transaction
+        
+        updated = 0
+        with transaction.atomic():
+            for withdraw in queryset.filter(status=WithdrawRequest.STATUS_PENDING):
+                # Refund coins to user
+                rate = float(Settings.get_value("COIN_TO_RS_RATE", "0.1"))
+                coins_to_refund = int(float(withdraw.amount_rs) / rate)
+                withdraw.user.coins_balance += coins_to_refund
+                withdraw.user.save(update_fields=["coins_balance"])
+                
+                # Update withdrawal status
+                withdraw.status = WithdrawRequest.STATUS_REJECTED
+                withdraw.processed_at = timezone.now()
+                withdraw.save()
+                updated += 1
+        
+        self.message_user(request, f"{updated} withdrawal request(s) rejected and coins refunded.")
+    reject_requests.short_description = "Reject selected requests (refund coins)"
+    
+    def mark_as_paid(self, request, queryset):
+        """Mark selected withdrawal requests as paid"""
+        from django.utils import timezone
+        updated = queryset.filter(status=WithdrawRequest.STATUS_APPROVED).update(
+            status=WithdrawRequest.STATUS_PAID,
+            processed_at=timezone.now()
+        )
+        self.message_user(request, f"{updated} withdrawal request(s) marked as paid.")
+    mark_as_paid.short_description = "Mark as paid"
 
 
 # -----------------------------------------
