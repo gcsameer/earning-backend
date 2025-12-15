@@ -28,7 +28,8 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = os.environ.get("DJANGO_SECRET_KEY", "dev-secret-key-change-me")
 
 # In production set DJANGO_DEBUG=False in env
-DEBUG = os.environ.get("DJANGO_DEBUG", "True") == "True"
+# Default to False for security (must explicitly set to True for development)
+DEBUG = os.environ.get("DJANGO_DEBUG", "False") == "True"
 
 # In production set DJANGO_ALLOWED_HOSTS to your domain(s), comma-separated
 # e.g. "earning-backend-production.up.railway.app"
