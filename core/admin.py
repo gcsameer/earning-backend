@@ -97,7 +97,7 @@ class WalletTransactionAdmin(admin.ModelAdmin):
 # -----------------------------------------
 @admin.register(WithdrawRequest)
 class WithdrawRequestAdmin(admin.ModelAdmin):
-    list_display = ("user", "amount_rs", "method", "account_id", "status", "created_at", "processed_at")
+    list_display = ("user", "amount_rs", "method", "account_id", "status_badge", "created_at", "processed_at", "action_buttons")
     list_filter = ("method", "status", "created_at")
     search_fields = ("user__username", "user__email", "account_id")
     list_select_related = ("user",)
@@ -110,6 +110,32 @@ class WithdrawRequestAdmin(admin.ModelAdmin):
             "fields": ("admin_note", "processed_at")
         }),
     )
+    
+    def status_badge(self, obj):
+        colors = {
+            "pending": "warning",
+            "approved": "info",
+            "rejected": "danger",
+            "paid": "success"
+        }
+        color = colors.get(obj.status, "secondary")
+        return format_html(
+            '<span class="badge bg-{}">{}</span>',
+            color,
+            obj.get_status_display()
+        )
+    status_badge.short_description = "Status"
+    status_badge.admin_order_field = "status"
+    
+    def action_buttons(self, obj):
+        if obj.status == "pending":
+            return format_html(
+                '<a href="/admin/core/withdrawrequest/{}/change/" class="btn btn-sm btn-success" style="margin-right: 5px;">Approve</a>'
+                '<a href="/admin/core/withdrawrequest/{}/change/" class="btn btn-sm btn-danger">Reject</a>',
+                obj.id, obj.id
+            )
+        return "-"
+    action_buttons.short_description = "Actions"
     
     actions = ["approve_requests", "reject_requests", "mark_as_paid"]
     

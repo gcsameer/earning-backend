@@ -339,28 +339,39 @@ CPX_SECRET = os.environ.get("CPX_SECRET", "")
 CPX_REQUIRE_SECURE_HASH = os.getenv("CPX_REQUIRE_SECURE_HASH", "false").lower() == "true"
 
 # ---------------------------------------------------------------------
-# JAZZMIN ADMIN THEME CONFIGURATION
+# JAZZMIN ADMIN THEME CONFIGURATION - Professional & Attractive
 # ---------------------------------------------------------------------
 JAZZMIN_SETTINGS = {
     # Title on the brand (19 chars max)
-    "site_brand": "NepEarn Admin",
+    "site_brand": "💰 NepEarn Admin",
     "site_logo": None,
     
     # Welcome text on the login screen
     "welcome_sign": "Welcome to NepEarn Admin Panel",
+    "login_logo": None,
+    "login_logo_dark": None,
     
     # Copyright on the footer
-    "copyright": "NepEarn",
+    "copyright": "© 2024 NepEarn. All rights reserved.",
     
     # The model admin to search from the search bar
-    "search_model": ["auth.User", "core.WithdrawRequest"],
+    "search_model": ["auth.User", "core.WithdrawRequest", "core.Task"],
     
     ############
     # Top Menu #
     ############
     "topmenu_links": [
-        {"name": "Home", "url": "admin:index", "permissions": ["auth.view_user"]},
-        {"name": "View Site", "url": "/", "new_window": True},
+        {"name": "🏠 Home", "url": "admin:index", "permissions": ["auth.view_user"]},
+        {"name": "🌐 View Site", "url": "/", "new_window": True},
+        {"name": "📊 Analytics", "url": "admin:core_withdrawrequest_changelist", "permissions": ["core.view_withdrawrequest"]},
+    ],
+    
+    #############
+    # User Menu #
+    #############
+    "usermenu_links": [
+        {"name": "🔒 Change Password", "url": "admin:password_change", "icon": "fas fa-key"},
+        {"name": "📝 Profile", "url": "admin:auth_user_change", "icon": "fas fa-user", "permissions": ["auth.view_user"]},
     ],
     
     #############
@@ -369,28 +380,55 @@ JAZZMIN_SETTINGS = {
     "show_sidebar": True,
     "navigation_expanded": True,
     
+    # Hide these apps when generating side menu
+    "hide_apps": [],
+    
+    # Hide these models when generating side menu
+    "hide_models": [],
+    
     # List of apps (and/or models) to base side menu ordering off of
     "order_with_respect_to": ["auth", "core"],
     
-    # Custom icons for models
+    # Custom links to append to app groups
+    "custom_links": {
+        "core": [{
+            "name": "💰 Pending Withdrawals",
+            "url": "admin:core_withdrawrequest_changelist?status__exact=pending",
+            "icon": "fas fa-clock",
+            "permissions": ["core.view_withdrawrequest"]
+        }, {
+            "name": "📊 Dashboard Stats",
+            "url": "admin:index",
+            "icon": "fas fa-chart-bar",
+        }]
+    },
+    
+    # Custom icons for models - Professional icons
     "icons": {
         "auth": "fas fa-users-cog",
-        "auth.user": "fas fa-user",
+        "auth.user": "fas fa-user-circle",
         "auth.Group": "fas fa-users",
-        "core.User": "fas fa-user",
+        "core.User": "fas fa-user-tie",
         "core.Task": "fas fa-tasks",
         "core.UserTask": "fas fa-clipboard-check",
         "core.WithdrawRequest": "fas fa-money-bill-wave",
         "core.WalletTransaction": "fas fa-wallet",
-        "core.Settings": "fas fa-cog",
+        "core.Settings": "fas fa-cogs",
         "core.FraudEvent": "fas fa-shield-alt",
         "core.Achievement": "fas fa-trophy",
+        "core.DailyChallenge": "fas fa-calendar-check",
+        "core.Achievement": "fas fa-medal",
         "core.DailyChallenge": "fas fa-calendar-day",
     },
     
     # Icons that are used when one is not manually specified
     "default_icon_parents": "fas fa-chevron-circle-right",
     "default_icon_children": "fas fa-circle",
+    
+    #################
+    # Related Modal #
+    #################
+    "related_modal_active": True,
     
     #############
     # UI Tweaks #
@@ -405,26 +443,31 @@ JAZZMIN_SETTINGS = {
     "changeform_format_overrides": {
         "auth.user": "collapsible",
         "auth.group": "vertical_tabs",
+        "core.WithdrawRequest": "horizontal_tabs",
     },
+    
+    # Custom CSS for additional styling
+    "custom_css": "admin/css/custom_admin.css",
+    "custom_js": None,
 }
 
 JAZZMIN_UI_TWEAKS = {
     "navbar_small_text": False,
-    "footer_small_text": False,
+    "footer_small_text": True,
     "body_small_text": False,
     "brand_small_text": False,
-    "brand_colour": "navbar-primary",
-    "accent": "accent-primary",
-    "navbar": "navbar-dark",
+    "brand_colour": "navbar-success",
+    "accent": "accent-success",
+    "navbar": "navbar-dark navbar-success",
     "no_navbar_border": False,
     "navbar_fixed": True,
     "layout_boxed": False,
-    "footer_fixed": False,
+    "footer_fixed": True,
     "sidebar_fixed": True,
-    "sidebar": "sidebar-dark-primary",
+    "sidebar": "sidebar-dark-success",
     "sidebar_nav_small_text": False,
     "sidebar_disable_expand": False,
-    "sidebar_nav_child_indent": False,
+    "sidebar_nav_child_indent": True,
     "sidebar_nav_compact_style": False,
     "sidebar_nav_legacy_style": False,
     "sidebar_nav_flat_style": False,
