@@ -11,6 +11,7 @@ from .models import (
     WithdrawRequest,
     FraudEvent,
     CPXTransaction,
+    TapjoyTransaction,
 )
 
 
@@ -205,3 +206,15 @@ class CPXTransactionAdmin(admin.ModelAdmin):
     search_fields = ("trans_id", "user__username")
     list_select_related = ("user",)
     readonly_fields = ("trans_id", "created_at")
+
+
+# -----------------------------------------
+# TAPJOY TRANSACTION ADMIN
+# -----------------------------------------
+@admin.register(TapjoyTransaction)
+class TapjoyTransactionAdmin(admin.ModelAdmin):
+    list_display = ("transaction_id", "user", "currency_amount", "applied", "created_at")
+    list_filter = ("applied", "created_at")
+    search_fields = ("transaction_id", "user__username")
+    list_select_related = ("user",)
+    readonly_fields = ("transaction_id", "created_at")

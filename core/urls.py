@@ -1,6 +1,7 @@
 from django.urls import path
 from rest_framework_simplejwt.views import TokenRefreshView
 from .cpx import cpx_wall_url, cpx_postback
+from .tapjoy import tapjoy_wall_url, tapjoy_postback
 
 from .views import (
     CustomTokenObtainPairView,
@@ -107,6 +108,12 @@ urlpatterns = [
     # -------------------------
     path("cpx/wall/", cpx_wall_url, name="cpx_wall"),
     path("cpx/postback/", cpx_postback, name="cpx_postback"),
+    
+    # -------------------------
+    # TAPJOY
+    # -------------------------
+    path("tapjoy/wall/", tapjoy_wall_url, name="tapjoy_wall"),
+    path("tapjoy/postback/", tapjoy_postback, name="tapjoy_postback"),
     
     # -------------------------
     # ADMIN (Admin only - requires IsAdminUser permission)

@@ -338,6 +338,10 @@ CPX_CURRENCY_FACTOR = int(os.getenv("CPX_CURRENCY_FACTOR", "1000"))
 CPX_SECRET = os.environ.get("CPX_SECRET", "")
 CPX_REQUIRE_SECURE_HASH = os.getenv("CPX_REQUIRE_SECURE_HASH", "false").lower() == "true"
 
+# Tapjoy Integration
+TAPJOY_SDK_KEY = os.getenv("TAPJOY_SDK_KEY", "")
+TAPJOY_SECRET_KEY = os.getenv("TAPJOY_SECRET_KEY", "")
+
 # ---------------------------------------------------------------------
 # JAZZMIN ADMIN THEME CONFIGURATION - Professional & Attractive
 # ---------------------------------------------------------------------

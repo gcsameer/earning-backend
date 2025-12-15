@@ -109,6 +109,7 @@ class Task(models.Model):
         ("video", "Video"),
         ("quiz", "Quiz"),
         ("offerwall", "Offerwall"),
+        ("tapjoy_offerwall", "Tapjoy Offerwall"),
         ("scratch_card", "Scratch Card"),
         ("spin_wheel", "Spin Wheel"),
         ("puzzle", "Puzzle"),
@@ -251,3 +252,15 @@ class CPXTransaction(models.Model):
 
     def __str__(self):
         return f"{self.trans_id} ({self.user})"
+
+
+class TapjoyTransaction(models.Model):
+    """Tapjoy offerwall transaction tracking"""
+    transaction_id = models.CharField(max_length=100, unique=True)
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+    currency_amount = models.IntegerField(default=0)  # coins earned
+    applied = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.transaction_id} ({self.user}) - {self.currency_amount} coins"
