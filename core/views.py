@@ -138,7 +138,16 @@ class TaskCompleteView(APIView):
         # UPDATE counters
         user.register_earn()
         user.coins_balance += reward
-        user.save(update_fields=["coins_balance"])
+        
+        # Add experience points (10 XP per task)
+        user.total_experience += 10
+        # Level up calculation: Level = floor(sqrt(total_experience / 100)) + 1
+        import math
+        new_level = math.floor(math.sqrt(user.total_experience / 100)) + 1
+        if new_level > user.user_level:
+            user.user_level = new_level
+        
+        user.save(update_fields=["coins_balance", "total_experience", "user_level"])
 
         WalletTransaction.objects.create(
             user=user,

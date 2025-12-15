@@ -111,6 +111,10 @@ class UserSerializer(serializers.ModelSerializer):
             "ref_code",
             "coins_balance",
             "fraud_score",
+            "login_streak",
+            "longest_streak",
+            "user_level",
+            "total_experience",
         )
 
 

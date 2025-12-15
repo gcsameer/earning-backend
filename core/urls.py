@@ -20,6 +20,10 @@ from .views_daily_bonus import DailyBonusView
 from .views_referrals import ReferralAnalyticsView
 from .views_games import GameTaskCompleteView
 from .views_cors_test import CORSTestView
+from .views_analytics import UserAnalyticsView
+from .views_streak import LoginStreakView
+from .views_achievements import AchievementsView
+from .views_challenges import DailyChallengesView
 
 
 urlpatterns = [
@@ -66,6 +70,26 @@ urlpatterns = [
     # REFERRAL ANALYTICS
     # -------------------------
     path("referrals/", ReferralAnalyticsView.as_view(), name="referrals"),
+    
+    # -------------------------
+    # ANALYTICS & STATS
+    # -------------------------
+    path("analytics/", UserAnalyticsView.as_view(), name="user_analytics"),
+    
+    # -------------------------
+    # LOGIN STREAK
+    # -------------------------
+    path("streak/", LoginStreakView.as_view(), name="login_streak"),
+    
+    # -------------------------
+    # ACHIEVEMENTS
+    # -------------------------
+    path("achievements/", AchievementsView.as_view(), name="achievements"),
+    
+    # -------------------------
+    # DAILY CHALLENGES
+    # -------------------------
+    path("challenges/", DailyChallengesView.as_view(), name="daily_challenges"),
     
     # -------------------------
     # CORS TEST (for debugging)

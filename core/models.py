@@ -35,6 +35,15 @@ class User(AbstractUser):
     daily_earn_count = models.IntegerField(default=0)
     last_earn_date = models.DateField(null=True, blank=True)
     daily_bonus_claimed = models.DateField(null=True, blank=True)
+    
+    # Login streak system
+    login_streak = models.IntegerField(default=0)
+    last_login_date = models.DateField(null=True, blank=True)
+    longest_streak = models.IntegerField(default=0)
+    
+    # User level/experience
+    user_level = models.IntegerField(default=1)
+    total_experience = models.IntegerField(default=0)
 
     # ------------------------------
     # AUTO-GENERATE REFERRAL CODE
