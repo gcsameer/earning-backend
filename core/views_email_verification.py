@@ -8,8 +8,10 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 # Try to import dnspython, but make it optional
+# Note: dnspython is in requirements.txt and will be installed in production
+# The linter warning is expected if the package isn't installed locally
 try:
-    import dns.resolver
+    import dns.resolver  # noqa: F401
     DNS_AVAILABLE = True
 except ImportError:
     DNS_AVAILABLE = False
