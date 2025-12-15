@@ -11,6 +11,7 @@ commands = [
 [phases.migrate]
 commands = [
     "python manage.py migrate --noinput",
+    "python manage.py setup_settings || true",
     "python manage.py create_game_tasks || true",
     "python manage.py verify_tasks || true"
 ]
