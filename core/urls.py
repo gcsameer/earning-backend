@@ -12,6 +12,7 @@ from .views import (
     WalletView,
     WithdrawRequestView,
     UserWithdrawListView,
+    RewardedAdCompleteView,
 )
 
 from .views_daily_bonus import DailyBonusView
@@ -68,6 +69,11 @@ urlpatterns = [
     # CORS TEST (for debugging)
     # -------------------------
     path("cors-test/", CORSTestView.as_view(), name="cors_test"),
+    
+    # -------------------------
+    # ADS
+    # -------------------------
+    path("ads/rewarded/complete/", RewardedAdCompleteView.as_view(), name="rewarded_ad_complete"),
     
     # -------------------------
     # CPX

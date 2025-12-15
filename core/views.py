@@ -223,6 +223,46 @@ class WithdrawRequestView(APIView):
         return Response({"message": "Withdraw request created"}, status=status.HTTP_201_CREATED)
 
 
+class RewardedAdCompleteView(APIView):
+    """
+    Credit coins to user after watching a rewarded ad.
+    This endpoint is called from the mobile app after a rewarded ad is completed.
+    """
+    permission_classes = [permissions.IsAuthenticated]
+    
+    def post(self, request):
+        user = request.user
+        
+        # Reward amount for watching rewarded ad (can be configured)
+        reward_coins = 10  # Default: 10 coins per rewarded ad
+        
+        # Optional: Add daily limit check
+        if not user.can_earn_now(max_per_day=100):
+            return Response(
+                {"detail": "Daily earning limit reached. Try again tomorrow."},
+                status=status.HTTP_403_FORBIDDEN
+            )
+        
+        # Credit coins
+        user.register_earn()
+        user.coins_balance += reward_coins
+        user.save(update_fields=["coins_balance", "last_earn_date", "daily_earn_count", "last_earn_time"])
+        
+        # Create wallet transaction
+        WalletTransaction.objects.create(
+            user=user,
+            type="earn",
+            coins=reward_coins,
+            note="Watched rewarded ad",
+        )
+        
+        return Response({
+            "message": "Reward credited successfully",
+            "reward_coins": reward_coins,
+            "new_balance": user.coins_balance,
+        }, status=status.HTTP_200_OK)
+
+
 class UserWithdrawListView(APIView):
     def get(self, request):
         w = WithdrawRequest.objects.filter(user=request.user).order_by("-created_at")
