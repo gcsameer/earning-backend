@@ -417,8 +417,6 @@ JAZZMIN_SETTINGS = {
         "core.FraudEvent": "fas fa-shield-alt",
         "core.Achievement": "fas fa-trophy",
         "core.DailyChallenge": "fas fa-calendar-check",
-        "core.Achievement": "fas fa-medal",
-        "core.DailyChallenge": "fas fa-calendar-day",
     },
     
     # Icons that are used when one is not manually specified
