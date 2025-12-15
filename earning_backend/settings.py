@@ -337,3 +337,106 @@ CPX_SECURITY_HASH = os.getenv("CPX_SECURITY_HASH", "cH0T7KHiYJBFKLFqc0k22HICZ1B3
 CPX_CURRENCY_FACTOR = int(os.getenv("CPX_CURRENCY_FACTOR", "1000"))
 CPX_SECRET = os.environ.get("CPX_SECRET", "")
 CPX_REQUIRE_SECURE_HASH = os.getenv("CPX_REQUIRE_SECURE_HASH", "false").lower() == "true"
+
+# ---------------------------------------------------------------------
+# JAZZMIN ADMIN THEME CONFIGURATION
+# ---------------------------------------------------------------------
+JAZZMIN_SETTINGS = {
+    # Title on the brand (19 chars max)
+    "site_brand": "NepEarn Admin",
+    "site_logo": None,
+    
+    # Welcome text on the login screen
+    "welcome_sign": "Welcome to NepEarn Admin Panel",
+    
+    # Copyright on the footer
+    "copyright": "NepEarn",
+    
+    # The model admin to search from the search bar
+    "search_model": ["auth.User", "core.WithdrawRequest"],
+    
+    ############
+    # Top Menu #
+    ############
+    "topmenu_links": [
+        {"name": "Home", "url": "admin:index", "permissions": ["auth.view_user"]},
+        {"name": "View Site", "url": "/", "new_window": True},
+    ],
+    
+    #############
+    # Side Menu #
+    #############
+    "show_sidebar": True,
+    "navigation_expanded": True,
+    
+    # List of apps (and/or models) to base side menu ordering off of
+    "order_with_respect_to": ["auth", "core"],
+    
+    # Custom icons for models
+    "icons": {
+        "auth": "fas fa-users-cog",
+        "auth.user": "fas fa-user",
+        "auth.Group": "fas fa-users",
+        "core.User": "fas fa-user",
+        "core.Task": "fas fa-tasks",
+        "core.UserTask": "fas fa-clipboard-check",
+        "core.WithdrawRequest": "fas fa-money-bill-wave",
+        "core.WalletTransaction": "fas fa-wallet",
+        "core.Settings": "fas fa-cog",
+        "core.FraudEvent": "fas fa-shield-alt",
+        "core.Achievement": "fas fa-trophy",
+        "core.DailyChallenge": "fas fa-calendar-day",
+    },
+    
+    # Icons that are used when one is not manually specified
+    "default_icon_parents": "fas fa-chevron-circle-right",
+    "default_icon_children": "fas fa-circle",
+    
+    #############
+    # UI Tweaks #
+    #############
+    "use_google_fonts_cdn": True,
+    "show_ui_builder": False,
+    
+    ###############
+    # Change view #
+    ###############
+    "changeform_format": "horizontal_tabs",
+    "changeform_format_overrides": {
+        "auth.user": "collapsible",
+        "auth.group": "vertical_tabs",
+    },
+}
+
+JAZZMIN_UI_TWEAKS = {
+    "navbar_small_text": False,
+    "footer_small_text": False,
+    "body_small_text": False,
+    "brand_small_text": False,
+    "brand_colour": "navbar-primary",
+    "accent": "accent-primary",
+    "navbar": "navbar-dark",
+    "no_navbar_border": False,
+    "navbar_fixed": True,
+    "layout_boxed": False,
+    "footer_fixed": False,
+    "sidebar_fixed": True,
+    "sidebar": "sidebar-dark-primary",
+    "sidebar_nav_small_text": False,
+    "sidebar_disable_expand": False,
+    "sidebar_nav_child_indent": False,
+    "sidebar_nav_compact_style": False,
+    "sidebar_nav_legacy_style": False,
+    "sidebar_nav_flat_style": False,
+    "theme": "default",
+    "dark_mode_theme": None,
+    "button_classes": {
+        "primary": "btn-primary",
+        "secondary": "btn-secondary",
+        "info": "btn-info",
+        "warning": "btn-warning",
+        "danger": "btn-danger",
+        "success": "btn-success"
+    },
+    "actions_sticky_top": True
+}
