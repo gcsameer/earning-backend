@@ -147,6 +147,9 @@ _cors_logger.info("=" * 50)
 # ---------------------------------------------------------------------
 
 INSTALLED_APPS = [
+    # Jazzmin must be before django.contrib.admin
+    "jazzmin",
+    
     "django.contrib.admin",
     "django.contrib.auth",
     "django.contrib.contenttypes",
