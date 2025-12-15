@@ -166,7 +166,7 @@ class WalletView(APIView):
     def get(self, request):
         user = request.user
 
-        rate = float(Settings.get_value("COIN_TO_RS_RATE", "0.05"))
+        rate = float(Settings.get_value("COIN_TO_RS_RATE", "0.1"))
         balance_rs = user.coins_balance * rate
 
         tx = WalletTransaction.objects.filter(user=user).order_by("-created_at")[:50]
