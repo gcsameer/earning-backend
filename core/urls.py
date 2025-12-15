@@ -14,6 +14,7 @@ from .views import (
     UserWithdrawListView,
     RewardedAdCompleteView,
 )
+from .views_email_verification import EmailVerificationView
 
 from .views_daily_bonus import DailyBonusView
 from .views_referrals import ReferralAnalyticsView
@@ -29,6 +30,7 @@ urlpatterns = [
     path("auth/token/", CustomTokenObtainPairView.as_view(), name="token_obtain_pair"),
     path("auth/token/refresh/", TokenRefreshView.as_view(), name="token_refresh"),
     path("auth/register/", RegisterView.as_view(), name="register"),
+    path("auth/verify-email/", EmailVerificationView.as_view(), name="verify_email"),
 
     # -------------------------
     # USER PROFILE
