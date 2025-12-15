@@ -73,12 +73,12 @@ def check_daily_task_limit(user, max_tasks_per_day=3):
     today = timezone.now().date()
 
     # Count only non-offerwall tasks completed today
+    # Exclude offerwall tasks from daily limit
     count_today = UserTask.objects.filter(
         user=user,
-        started_at__date=today,
-        task__type__ne="offerwall"  # Exclude offerwall tasks
+        started_at__date=today
     ).exclude(
-        task__type="offerwall"  # Double check - exclude offerwall
+        task__type="offerwall"  # Exclude offerwall tasks from daily limit
     ).count()
 
     if count_today >= max_tasks_per_day:
