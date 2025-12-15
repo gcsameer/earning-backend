@@ -24,7 +24,7 @@ from .views_analytics import UserAnalyticsView
 from .views_streak import LoginStreakView
 from .views_achievements import AchievementsView
 from .views_challenges import DailyChallengesView
-from .views_admin import AdminWithdrawListView, AdminWithdrawDetailView, AdminWithdrawActionView
+from .views_admin import AdminWithdrawListView, AdminWithdrawDetailView, AdminWithdrawActionView, AdminWithdrawActionView
 
 
 urlpatterns = [
