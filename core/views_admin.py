@@ -62,6 +62,15 @@ class AdminWithdrawDetailView(APIView):
                 status=status.HTTP_404_NOT_FOUND
             )
     
+class AdminWithdrawActionView(APIView):
+    """
+    Approve, reject, or mark as paid a withdrawal request (admin only).
+    POST /api/admin/withdraws/<id>/approve/
+    POST /api/admin/withdraws/<id>/reject/
+    POST /api/admin/withdraws/<id>/mark-paid/
+    """
+    permission_classes = [permissions.IsAdminUser]
+    
     def post(self, request, withdraw_id, action):
         """
         Handle approve, reject, or mark-paid actions
