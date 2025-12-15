@@ -63,17 +63,22 @@ def check_task_speed(user_task, min_seconds=8):
 # -------------------------------------
 # DAILY TASK LIMIT CHECK
 # -------------------------------------
-def check_daily_task_limit(user, max_tasks_per_day=50):
+def check_daily_task_limit(user, max_tasks_per_day=3):
     """
     Prevent user from exceeding daily task limit.
     Blocks new tasks when limit reached.
+    Excludes offerwall tasks from the count.
     """
 
     today = timezone.now().date()
 
+    # Count only non-offerwall tasks completed today
     count_today = UserTask.objects.filter(
         user=user,
-        started_at__date=today
+        started_at__date=today,
+        task__type__ne="offerwall"  # Exclude offerwall tasks
+    ).exclude(
+        task__type="offerwall"  # Double check - exclude offerwall
     ).count()
 
     if count_today >= max_tasks_per_day:
@@ -89,5 +94,5 @@ def check_daily_task_limit(user, max_tasks_per_day=50):
         )
 
         raise PermissionDenied(
-            "Daily task limit reached. Try again tomorrow."
+            f"Daily task limit reached ({max_tasks_per_day} tasks per day). Try again tomorrow."
         )

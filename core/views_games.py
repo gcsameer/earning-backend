@@ -83,11 +83,11 @@ class GameTaskCompleteView(APIView):
             
             # Calculate reward based on task type
             if task.type == "scratch_card":
-                # Scratch Card: 20-150 coins (random)
-                reward = random.randint(20, 150)
+                # Scratch Card: 25-100 coins (random)
+                reward = random.randint(25, 100)
             elif task.type == "spin_wheel":
-                # Spin Wheel: 20-150 coins (random)
-                reward = random.randint(20, 150)
+                # Spin Wheel: 25-100 coins (random)
+                reward = random.randint(25, 100)
             elif task.type == "puzzle":
                 # Math Puzzle: 50 coins (fixed)
                 reward = 50

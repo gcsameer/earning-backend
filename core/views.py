@@ -190,7 +190,7 @@ class WithdrawRequestView(APIView):
         except:
             return Response({"detail": "Invalid amount"}, status=status.HTTP_400_BAD_REQUEST)
 
-        rate = float(Settings.get_value("COIN_TO_RS_RATE", "0.05"))
+        rate = float(Settings.get_value("COIN_TO_RS_RATE", "0.1"))
         min_rs = float(Settings.get_value("MIN_WITHDRAW_RS", "50"))
 
         if amount_rs < min_rs:

@@ -16,14 +16,14 @@ class Command(BaseCommand):
             {
                 'type': 'scratch_card',
                 'title': 'Scratch Card - Win Coins!',
-                'description': '🎫 Scratch the card to reveal your reward. Win between 20-150 coins instantly!',
+                'description': '🎫 Scratch the card to reveal your reward. Win between 25-100 coins instantly!',
                 'reward_coins': 0,  # Will be random 20-150
                 'is_active': True,
             },
             {
                 'type': 'spin_wheel',
                 'title': 'Spin the Wheel',
-                'description': '🎡 Spin the wheel and win coins! Each spin can reward 20-150 coins instantly!',
+                'description': '🎡 Spin the wheel and win coins! Each spin can reward 25-100 coins instantly!',
                 'reward_coins': 0,  # Will be random 20-150
                 'is_active': True,
             },
