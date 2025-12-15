@@ -5,7 +5,7 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('core', '0001_initial'),  # Adjust based on your actual migration number
+        ('core', '0004_alter_task_type'),
     ]
 
     operations = [
