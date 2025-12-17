@@ -66,21 +66,22 @@ class GameTaskCompleteView(APIView):
                     status=status.HTTP_400_BAD_REQUEST
                 )
             
-            # Check how many times user completed THIS specific task today
-            # Allow up to 3 times per day per task
+            # Check how many times user completed tasks of THIS TYPE today
+            # Allow up to 3 times per day per task TYPE (scratch_card, spin_wheel, puzzle, quiz)
             today = timezone.now().date()
-            task_completions_today = UserTask.objects.filter(
+            task_type_completions_today = UserTask.objects.filter(
                 user=user,
-                task=task,
+                task__type=task.type,  # Filter by task type, not specific task ID
                 status="completed",
                 completed_at__date=today
             ).count()
             
-            # Allow 3 times per day per task
-            max_per_task_per_day = 3
-            if task_completions_today >= max_per_task_per_day:
+            # Allow 3 times per day per task TYPE
+            max_per_task_type_per_day = 3
+            if task_type_completions_today >= max_per_task_type_per_day:
+                task_type_display = task.get_type_display()
                 return Response(
-                    {"detail": f"You have already completed this task {max_per_task_per_day} times today. Try again tomorrow."},
+                    {"detail": f"You have already completed {task_type_display} tasks {max_per_task_type_per_day} times today. Try again tomorrow."},
                     status=status.HTTP_400_BAD_REQUEST
                 )
             

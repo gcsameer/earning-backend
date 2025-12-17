@@ -119,23 +119,26 @@ class TaskCompleteView(APIView):
         user = request.user
         task = user_task.task
 
-        # Check how many times user completed THIS specific task today
-        # Allow up to 3 times per day per task
-        today = timezone.now().date()
-        task_completions_today = UserTask.objects.filter(
-            user=user,
-            task=task,
-            status="completed",
-            completed_at__date=today
-        ).count()
-        
-        # Allow 3 times per day per task
-        max_per_task_per_day = 3
-        if task_completions_today >= max_per_task_per_day:
-            return Response(
-                {"detail": f"You have already completed this task {max_per_task_per_day} times today. Try again tomorrow."},
-                status=status.HTTP_400_BAD_REQUEST
-            )
+        # For game-based tasks, check by task TYPE (not specific task ID)
+        # Allow up to 3 times per day per task TYPE
+        game_types = ["scratch_card", "spin_wheel", "puzzle", "quiz"]
+        if task.type in game_types:
+            today = timezone.now().date()
+            task_type_completions_today = UserTask.objects.filter(
+                user=user,
+                task__type=task.type,  # Filter by task type, not specific task ID
+                status="completed",
+                completed_at__date=today
+            ).count()
+            
+            # Allow 3 times per day per task TYPE
+            max_per_task_type_per_day = 3
+            if task_type_completions_today >= max_per_task_type_per_day:
+                task_type_display = task.get_type_display()
+                return Response(
+                    {"detail": f"You have already completed {task_type_display} tasks {max_per_task_type_per_day} times today. Try again tomorrow."},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
 
         # DAILY EARNING LIMIT
         if not user.can_earn_now(max_per_day=100):
