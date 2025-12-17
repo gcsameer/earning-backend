@@ -67,18 +67,21 @@ def check_daily_task_limit(user, max_tasks_per_day=3):
     """
     Prevent user from exceeding daily task limit.
     Blocks new tasks when limit reached.
-    Excludes offerwall tasks from the count.
+    Excludes offerwall and game-based tasks from the count.
+    Game-based tasks (scratch_card, spin_wheel, puzzle, quiz) have their own per-type limits.
     """
 
     today = timezone.now().date()
 
-    # Count only non-offerwall tasks completed today
-    # Exclude offerwall tasks from daily limit
+    # Count only non-offerwall and non-game tasks started today
+    # Exclude offerwall tasks and game-based tasks from daily limit
+    # Game tasks have their own per-type limits (3 times per type)
+    game_types = ["scratch_card", "spin_wheel", "puzzle", "quiz"]
     count_today = UserTask.objects.filter(
         user=user,
         started_at__date=today
     ).exclude(
-        task__type="offerwall"  # Exclude offerwall tasks from daily limit
+        task__type__in=["offerwall", "tapjoy_offerwall"] + game_types  # Exclude offerwall and game tasks from daily limit
     ).count()
 
     if count_today >= max_tasks_per_day:
