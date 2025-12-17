@@ -14,8 +14,8 @@ class Command(BaseCommand):
         settings_data = [
             {
                 'key': 'COIN_TO_RS_RATE',
-                'value': '0.1',  # 1 coin = Rs 0.1
-                'description': 'Conversion rate: 1 coin = Rs 0.1'
+                'value': '0.025',  # 1 coin = Rs 0.025
+                'description': 'Conversion rate: 1 coin = Rs 0.025'
             },
             {
                 'key': 'MIN_WITHDRAW_RS',

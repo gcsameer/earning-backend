@@ -117,6 +117,25 @@ class TaskCompleteView(APIView):
             return Response({"detail": "Task not found or already completed"}, status=status.HTTP_404_NOT_FOUND)
 
         user = request.user
+        task = user_task.task
+
+        # Check how many times user completed THIS specific task today
+        # Allow up to 3 times per day per task
+        today = timezone.now().date()
+        task_completions_today = UserTask.objects.filter(
+            user=user,
+            task=task,
+            status="completed",
+            completed_at__date=today
+        ).count()
+        
+        # Allow 3 times per day per task
+        max_per_task_per_day = 3
+        if task_completions_today >= max_per_task_per_day:
+            return Response(
+                {"detail": f"You have already completed this task {max_per_task_per_day} times today. Try again tomorrow."},
+                status=status.HTTP_400_BAD_REQUEST
+            )
 
         # DAILY EARNING LIMIT
         if not user.can_earn_now(max_per_day=100):
@@ -166,7 +185,7 @@ class WalletView(APIView):
     def get(self, request):
         user = request.user
 
-        rate = float(Settings.get_value("COIN_TO_RS_RATE", "0.1"))
+        rate = float(Settings.get_value("COIN_TO_RS_RATE", "0.025"))
         balance_rs = user.coins_balance * rate
 
         tx = WalletTransaction.objects.filter(user=user).order_by("-created_at")[:50]
@@ -199,7 +218,7 @@ class WithdrawRequestView(APIView):
         except:
             return Response({"detail": "Invalid amount"}, status=status.HTTP_400_BAD_REQUEST)
 
-        rate = float(Settings.get_value("COIN_TO_RS_RATE", "0.1"))
+        rate = float(Settings.get_value("COIN_TO_RS_RATE", "0.025"))
         min_rs = float(Settings.get_value("MIN_WITHDRAW_RS", "50"))
 
         if amount_rs < min_rs:

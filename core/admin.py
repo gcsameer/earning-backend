@@ -12,6 +12,7 @@ from .models import (
     FraudEvent,
     CPXTransaction,
     TapjoyTransaction,
+    DailyChallengeClaim,
 )
 
 
@@ -160,7 +161,7 @@ class WithdrawRequestAdmin(admin.ModelAdmin):
         with transaction.atomic():
             for withdraw in queryset.filter(status=WithdrawRequest.STATUS_PENDING):
                 # Refund coins to user
-                rate = float(Settings.get_value("COIN_TO_RS_RATE", "0.1"))
+                rate = float(Settings.get_value("COIN_TO_RS_RATE", "0.025"))
                 coins_to_refund = int(float(withdraw.amount_rs) / rate)
                 withdraw.user.coins_balance += coins_to_refund
                 withdraw.user.save(update_fields=["coins_balance"])
@@ -218,3 +219,15 @@ class TapjoyTransactionAdmin(admin.ModelAdmin):
     search_fields = ("transaction_id", "user__username")
     list_select_related = ("user",)
     readonly_fields = ("transaction_id", "created_at")
+
+
+# -----------------------------------------
+# DAILY CHALLENGE CLAIM ADMIN
+# -----------------------------------------
+@admin.register(DailyChallengeClaim)
+class DailyChallengeClaimAdmin(admin.ModelAdmin):
+    list_display = ("user", "challenge_id", "claimed_date", "created_at")
+    list_filter = ("challenge_id", "claimed_date")
+    search_fields = ("user__username", "challenge_id")
+    list_select_related = ("user",)
+    readonly_fields = ("created_at",)

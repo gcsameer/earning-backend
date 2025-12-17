@@ -8,7 +8,7 @@ from rest_framework import status, permissions
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from .models import UserTask, WalletTransaction, Settings
+from .models import UserTask, WalletTransaction, Settings, DailyChallengeClaim
 
 
 class DailyChallengesView(APIView):
@@ -43,6 +43,12 @@ class DailyChallengesView(APIView):
         challenge_3_complete = user.login_streak >= 3
         challenge_3_reward = 20 if challenge_3_complete else 0
 
+        # Check which challenges have been claimed today
+        claimed_today = DailyChallengeClaim.objects.filter(
+            user=user,
+            claimed_date=today
+        ).values_list('challenge_id', flat=True)
+
         challenges = [
             {
                 "id": "complete_3_tasks",
@@ -52,7 +58,7 @@ class DailyChallengesView(APIView):
                 "target": 3,
                 "reward": 30,
                 "completed": challenge_1_complete,
-                "claimed": False  # Track if reward claimed
+                "claimed": "complete_3_tasks" in claimed_today
             },
             {
                 "id": "earn_100_coins",
@@ -62,7 +68,7 @@ class DailyChallengesView(APIView):
                 "target": 100,
                 "reward": 50,
                 "completed": challenge_2_complete,
-                "claimed": False
+                "claimed": "earn_100_coins" in claimed_today
             },
             {
                 "id": "streak_3_days",
@@ -72,7 +78,7 @@ class DailyChallengesView(APIView):
                 "target": 3,
                 "reward": 20,
                 "completed": challenge_3_complete,
-                "claimed": False
+                "claimed": "streak_3_days" in claimed_today
             }
         ]
 
@@ -90,6 +96,17 @@ class DailyChallengesView(APIView):
         user = request.user
         today = timezone.now().date()
 
+        # Check if already claimed today
+        if DailyChallengeClaim.objects.filter(
+            user=user,
+            challenge_id=challenge_id,
+            claimed_date=today
+        ).exists():
+            return Response(
+                {"detail": "This challenge reward has already been claimed today. Try again tomorrow."},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
         # Re-check challenge completion
         if challenge_id == "complete_3_tasks":
             tasks_today = UserTask.objects.filter(
@@ -106,6 +123,12 @@ class DailyChallengesView(APIView):
                     type="bonus",
                     coins=reward,
                     note="Daily challenge: Complete 3 tasks"
+                )
+                # Mark as claimed
+                DailyChallengeClaim.objects.create(
+                    user=user,
+                    challenge_id=challenge_id,
+                    claimed_date=today
                 )
                 return Response({
                     "message": "Challenge reward claimed!",
@@ -129,6 +152,12 @@ class DailyChallengesView(APIView):
                     coins=reward,
                     note="Daily challenge: Earn 100 coins"
                 )
+                # Mark as claimed
+                DailyChallengeClaim.objects.create(
+                    user=user,
+                    challenge_id=challenge_id,
+                    claimed_date=today
+                )
                 return Response({
                     "message": "Challenge reward claimed!",
                     "reward": reward,
@@ -145,6 +174,12 @@ class DailyChallengesView(APIView):
                     type="bonus",
                     coins=reward,
                     note="Daily challenge: 3 day streak"
+                )
+                # Mark as claimed
+                DailyChallengeClaim.objects.create(
+                    user=user,
+                    challenge_id=challenge_id,
+                    claimed_date=today
                 )
                 return Response({
                     "message": "Challenge reward claimed!",

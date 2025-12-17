@@ -264,3 +264,20 @@ class TapjoyTransaction(models.Model):
 
     def __str__(self):
         return f"{self.transaction_id} ({self.user}) - {self.currency_amount} coins"
+
+
+class DailyChallengeClaim(models.Model):
+    """Track daily challenge claims to prevent multiple claims per day"""
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="challenge_claims")
+    challenge_id = models.CharField(max_length=50)  # e.g., "complete_3_tasks", "earn_100_coins", "streak_3_days"
+    claimed_date = models.DateField()
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = [['user', 'challenge_id', 'claimed_date']]
+        indexes = [
+            models.Index(fields=['user', 'challenge_id', 'claimed_date']),
+        ]
+
+    def __str__(self):
+        return f"{self.user.username} - {self.challenge_id} - {self.claimed_date}"
